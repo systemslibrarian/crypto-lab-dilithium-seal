@@ -3,6 +3,8 @@
 **ML-DSA (CRYSTALS-Dilithium)** — Browser-based post-quantum digital signature demo  
 Part of the [crypto-compare](https://github.com/systemslibrarian/crypto-compare) portfolio
 
+**[Live Demo](https://systemslibrarian.github.io/crypto-lab-dilithium-seal/)**
+
 ---
 
 ## What This Demo Shows
