@@ -19,6 +19,22 @@
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
 }
 
+:root[data-theme='light'] {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface2: #edf2f7;
+  --border: #c9d1d9;
+  --text: #1f2328;
+  --text-muted: #57606a;
+  --accent: #5e43d1;
+  --accent-hover: #4f35bf;
+  --green: #1a7f37;
+  --red: #d1242f;
+  --yellow: #9a6700;
+  --blue: #0969da;
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* Skip link (screen reader / keyboard) */
@@ -60,7 +76,7 @@ body {
 
 #app { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
 
-header { text-align: center; margin-bottom: 1.5rem; }
+header { text-align: center; margin-bottom: 1.5rem; position: relative; }
 header h1 {
   font-family: var(--mono);
   font-size: 1.8rem;
@@ -70,6 +86,31 @@ header h1 {
 header .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
 header .subtitle a { color: var(--blue); text-decoration: none; }
 header .subtitle a:hover { text-decoration: underline; }
+
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.theme-toggle:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 /* Tabs */
 #tabs {
@@ -468,6 +509,10 @@ textarea:focus, input[type="text"]:focus {
   box-shadow: var(--focus-ring);
 }
 #tabs button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.theme-toggle:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }

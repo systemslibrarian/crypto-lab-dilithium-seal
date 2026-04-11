@@ -19,4 +19,30 @@ const tabs: Tab[] = [
   { id: 'about', label: 'About', render: renderAbout },
 ];
 
+function applyTheme(theme: 'dark' | 'light'): void {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+
+  const toggle = document.getElementById('theme-toggle') as HTMLButtonElement | null;
+  if (!toggle) return;
+
+  const isDark = theme === 'dark';
+  toggle.textContent = isDark ? '🌙' : '☀️';
+  toggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+
+function initThemeToggle(): void {
+  const toggle = document.getElementById('theme-toggle') as HTMLButtonElement | null;
+  if (!toggle) return;
+
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(current);
+
+  toggle.addEventListener('click', () => {
+    const active = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    applyTheme(active === 'dark' ? 'light' : 'dark');
+  });
+}
+
 initTabs(tabs);
+initThemeToggle();
