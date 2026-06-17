@@ -72,32 +72,40 @@ export async function sealDocument(
 }
 
 export async function verifyDocument(doc: SealedDocument): Promise<VerifyResult> {
-  const currentHash = await sha256Hex(doc.content);
-  const contentIntact = currentHash === doc.contentHash;
+  if (!doc || typeof doc.content !== 'string' || typeof doc.publicKey !== 'string' || typeof doc.signature !== 'string' || typeof doc.variant !== 'string') {
+    return { valid: false, contentIntact: false, signatureValid: false, explanation: 'Document is missing required fields or has invalid format.' };
+  }
 
-  const publicKey = base64ToUint8(doc.publicKey);
-  const signature = base64ToUint8(doc.signature);
-  const message = new TextEncoder().encode(doc.content);
-
-  let signatureValid = false;
   try {
-    signatureValid = await verify(publicKey, message, signature, doc.variant);
-  } catch {
-    signatureValid = false;
+    const currentHash = await sha256Hex(doc.content);
+    const contentIntact = currentHash === doc.contentHash;
+
+    const publicKey = base64ToUint8(doc.publicKey);
+    const signature = base64ToUint8(doc.signature);
+    const message = new TextEncoder().encode(doc.content);
+
+    let signatureValid = false;
+    try {
+      signatureValid = await verify(publicKey, message, signature, doc.variant);
+    } catch {
+      signatureValid = false;
+    }
+
+    const valid = contentIntact && signatureValid;
+
+    let explanation: string;
+    if (valid) {
+      explanation = `Document integrity verified. Content hash matches and ML-DSA-${doc.variant.split('-')[2]} signature is valid. Signed by "${doc.signerLabel}" at ${doc.timestamp}.`;
+    } else if (!contentIntact && !signatureValid) {
+      explanation = 'Document has been tampered with: content hash mismatch AND signature verification failed.';
+    } else if (!contentIntact) {
+      explanation = 'Content integrity check failed: the SHA-256 hash of the current content does not match the recorded hash. The document text was modified after signing.';
+    } else {
+      explanation = 'Signature verification failed: the ML-DSA signature does not validate against the public key and message. The signature or public key may have been altered.';
+    }
+
+    return { valid, contentIntact, signatureValid, explanation };
+  } catch (err) {
+    return { valid: false, contentIntact: false, signatureValid: false, explanation: 'Verification aborted due to decoding or processing error.' };
   }
-
-  const valid = contentIntact && signatureValid;
-
-  let explanation: string;
-  if (valid) {
-    explanation = `Document integrity verified. Content hash matches and ML-DSA-${doc.variant.split('-')[2]} signature is valid. Signed by "${doc.signerLabel}" at ${doc.timestamp}.`;
-  } else if (!contentIntact && !signatureValid) {
-    explanation = 'Document has been tampered with: content hash mismatch AND signature verification failed.';
-  } else if (!contentIntact) {
-    explanation = 'Content integrity check failed: the SHA-256 hash of the current content does not match the recorded hash. The document text was modified after signing.';
-  } else {
-    explanation = 'Signature verification failed: the ML-DSA signature does not validate against the public key and message. The signature or public key may have been altered.';
-  }
-
-  return { valid, contentIntact, signatureValid, explanation };
 }

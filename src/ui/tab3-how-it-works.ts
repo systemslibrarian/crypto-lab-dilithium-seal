@@ -144,6 +144,7 @@ export function renderHowItWorks(container: HTMLElement): void {
     div.setAttribute('tabindex', '0');
     div.setAttribute('role', 'button');
     div.setAttribute('aria-expanded', i === 0 ? 'true' : 'false');
+    div.setAttribute('aria-controls', `step-body-${i}`);
     div.setAttribute('aria-label', `Step ${i + 1}: ${step.title}`);
     div.innerHTML = `
       <div class="step-title">${step.title}</div>

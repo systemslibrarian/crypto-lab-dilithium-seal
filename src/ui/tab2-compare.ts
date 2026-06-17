@@ -31,19 +31,20 @@ export function renderCompare(container: HTMLElement): void {
       <p class="text-sm text-muted mb-1">Size comparison across classical and post-quantum digital signature schemes.</p>
 
       <table class="comparison-table">
+        <caption class="sr-only">Public key size, signature size, quantum safety, and hardness assumption for classical and post-quantum signature schemes.</caption>
         <thead>
           <tr>
-            <th>Scheme</th>
-            <th>Public Key</th>
-            <th>Signature</th>
-            <th>Quantum Safe</th>
-            <th>Assumption</th>
+            <th scope="col">Scheme</th>
+            <th scope="col">Public Key</th>
+            <th scope="col">Signature</th>
+            <th scope="col">Quantum Safe</th>
+            <th scope="col">Assumption</th>
           </tr>
         </thead>
         <tbody>
           ${SCHEMES.map((s) => `
             <tr>
-              <td><strong>${s.name}</strong></td>
+              <th scope="row"><strong>${s.name}</strong></th>
               <td>${s.publicKey.toLocaleString()} B</td>
               <td>${s.signature.toLocaleString()} B</td>
               <td class="${s.quantumSafe ? 'quantum-yes' : 'quantum-no'}">${s.quantumSafe ? 'Yes' : 'No'}</td>
@@ -68,7 +69,7 @@ export function renderCompare(container: HTMLElement): void {
       <h2>Signing Speed Benchmark</h2>
       <p class="text-sm text-muted mb-1">Measure ML-DSA signing throughput in your browser. Each variant runs 50 sign iterations.</p>
       <button class="btn" id="btn-benchmark">Run Benchmark</button>
-      <div id="bench-output"></div>
+      <div id="bench-output" role="status" aria-live="polite" aria-atomic="true"></div>
       <p class="text-sm text-muted mt-2"><em>Ed25519 is typically 10–50× faster than ML-DSA in software. The size and speed cost is the price of quantum resistance.</em></p>
     </div>
 
@@ -108,11 +109,17 @@ function renderBars(
     const pct = Math.max((d.value / max) * 100, 3);
     const row = document.createElement('div');
     row.className = 'bar-row';
+    // role="img" + aria-label makes each bar a single labeled unit for screen
+    // readers; the value lives outside the fill so its contrast never depends
+    // on the bar colour (WCAG 1.4.3).
+    row.setAttribute('role', 'img');
+    row.setAttribute('aria-label', `${d.label}: ${d.value.toLocaleString()} bytes`);
     row.innerHTML = `
-      <span class="bar-label">${d.label}</span>
-      <div class="bar-track">
-        <div class="bar-fill ${d.cssClass}" style="width: ${pct}%">${d.value.toLocaleString()} B</div>
+      <span class="bar-label" aria-hidden="true">${d.label}</span>
+      <div class="bar-track" aria-hidden="true">
+        <div class="bar-fill ${d.cssClass}" style="width: ${pct}%"></div>
       </div>
+      <span class="bar-value" aria-hidden="true">${d.value.toLocaleString()} B</span>
     `;
     container.appendChild(row);
   });
@@ -160,13 +167,13 @@ async function runBenchmark(): Promise<void> {
     results.push({ name: 'Ed25519', opsPerSec: -1 });
   }
 
-  let html = '<table class="comparison-table mt-1"><thead><tr><th>Scheme</th><th>ops/sec</th><th>Relative</th></tr></thead><tbody>';
+  let html = '<table class="comparison-table mt-1"><caption class="sr-only">Signing throughput benchmark results in operations per second.</caption><thead><tr><th scope="col">Scheme</th><th scope="col">ops/sec</th><th scope="col">Relative</th></tr></thead><tbody>';
   const maxOps = Math.max(...results.filter((r) => r.opsPerSec > 0).map((r) => r.opsPerSec));
 
   for (const r of results) {
     const ops = r.opsPerSec > 0 ? r.opsPerSec.toFixed(1) : 'N/A (not supported)';
     const rel = r.opsPerSec > 0 ? `${(r.opsPerSec / maxOps * 100).toFixed(0)}%` : '—';
-    html += `<tr><td><strong>${r.name}</strong></td><td>${ops}</td><td>${rel}</td></tr>`;
+    html += `<tr><th scope="row"><strong>${r.name}</strong></th><td>${ops}</td><td>${rel}</td></tr>`;
   }
   html += '</tbody></table>';
   output.innerHTML = html;

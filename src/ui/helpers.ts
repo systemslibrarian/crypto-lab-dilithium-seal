@@ -11,6 +11,18 @@ export function formatBytes(n: number): string {
   return `${n} B`;
 }
 
+export function escapeHTML(str: string): string {
+  return str.replace(/[&<>'"]/g, 
+    tag => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;'
+    }[tag] || tag)
+  );
+}
+
 export function $(selector: string, parent: Element | Document = document): HTMLElement | null {
   return parent.querySelector(selector);
 }

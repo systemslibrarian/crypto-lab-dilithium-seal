@@ -270,13 +270,19 @@ textarea:focus, input[type="text"]:focus {
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
-.comparison-table th {
+.comparison-table thead th {
   font-size: 0.72rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.comparison-table tr:hover td { background: var(--surface2); }
+/* Row headers (scheme names) keep body text styling, not the column-header look */
+.comparison-table tbody th {
+  font-weight: 400;
+  color: var(--text);
+}
+.comparison-table tbody tr:hover th,
+.comparison-table tbody tr:hover td { background: var(--surface2); }
 .comparison-table .quantum-yes { color: var(--green); font-weight: 600; }
 .comparison-table .quantum-no { color: var(--red); }
 
@@ -306,17 +312,21 @@ textarea:focus, input[type="text"]:focus {
   height: 100%;
   border-radius: 4px;
   transition: width 0.5s ease;
-  display: flex;
-  align-items: center;
-  padding-left: 0.4rem;
-  font-size: 0.7rem;
-  font-family: var(--mono);
-  color: #fff;
-  min-width: fit-content;
+  min-width: 2px;
 }
 .bar-fill.classical { background: var(--blue); }
 .bar-fill.lattice { background: var(--accent); }
 .bar-fill.hash-based { background: var(--yellow); }
+/* Value rendered outside the fill so its contrast never depends on bar colour */
+.bar-value {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  width: 66px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-left: 0.5rem;
+}
 
 /* Stepper */
 .stepper { counter-reset: step; }
@@ -526,6 +536,11 @@ a:focus-visible {
   outline-offset: 2px;
   border-radius: 2px;
 }
+#tab-content:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 6px;
+}
 
 /* Touch target minimum 44×44px (WCAG 2.5.5) */
 .btn {
@@ -577,8 +592,9 @@ a:focus-visible {
   /* Responsive tables */
   .comparison-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-  /* Bar chart: smaller label width */
+  /* Bar chart: smaller label + value widths */
   .bar-label { width: 80px; font-size: 0.68rem; }
+  .bar-value { width: 52px; font-size: 0.66rem; padding-left: 0.35rem; }
 
   /* Info grid: 2 columns */
   .info-grid { grid-template-columns: repeat(2, 1fr); }
@@ -605,7 +621,7 @@ a:focus-visible {
   textarea, input[type="text"] { font-size: 16px; } /* prevents iOS zoom on focus */
 
   .bar-label { width: 65px; font-size: 0.65rem; }
-  .bar-fill { font-size: 0.6rem; }
+  .bar-value { width: 46px; font-size: 0.62rem; }
 
   .output { font-size: 0.72rem; padding: 0.4rem; }
 

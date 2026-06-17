@@ -12,7 +12,7 @@ import {
   type MLDSAKeyPair,
 } from '../crypto/mldsa';
 import { sealDocument, verifyDocument, type SealedDocument } from '../crypto/seal';
-import { truncateHex, formatBytes, h } from './helpers';
+import { truncateHex, formatBytes, h, escapeHTML } from './helpers';
 
 let currentVariant: MLDSAVariant = 'ml-dsa-65';
 let keyPair: MLDSAKeyPair | null = null;
@@ -258,11 +258,11 @@ async function handleSeal(): Promise<void> {
 
   output.innerHTML = `
     <div class="text-sm mt-1"><strong>Content hash (SHA-256):</strong></div>
-    <div class="output">${lastSealedDoc.contentHash}</div>
+    <div class="output">${escapeHTML(lastSealedDoc.contentHash)}</div>
     <div class="text-sm"><strong>Signature</strong> (${atob(lastSealedDoc.signature).length} bytes, truncated):</div>
-    <div class="output">${lastSealedDoc.signature.slice(0, 80)}…</div>
+    <div class="output">${escapeHTML(lastSealedDoc.signature.slice(0, 80))}…</div>
     <div class="mt-1"><span class="badge badge-pass">✓ SEALED & VERIFIED</span></div>
-    <p class="text-sm text-muted mt-1">${result.explanation}</p>
+    <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)}</p>
   `;
 
   (document.getElementById('btn-export-seal') as HTMLButtonElement).disabled = false;
@@ -294,7 +294,7 @@ async function handleTamperSeal(): Promise<void> {
   output.innerHTML += `
     <div class="mt-2">
       <span class="badge badge-fail">✗ TAMPER DETECTED</span>
-      <p class="text-sm text-muted mt-1">${result.explanation}</p>
+      <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)}</p>
       <p class="text-sm text-red">Content integrity: ${result.contentIntact ? 'intact' : 'FAILED'} | Signature: ${result.signatureValid ? 'valid' : 'FAILED'}</p>
     </div>
   `;
@@ -326,7 +326,7 @@ async function handleVerifySealJSON(): Promise<void> {
 
   output.innerHTML = `
     <div class="mt-1">${badge}</div>
-    <p class="text-sm text-muted mt-1">${result.explanation}</p>
+    <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)}</p>
     <p class="text-sm">Content intact: ${result.contentIntact ? '<span class="text-green">yes</span>' : '<span class="text-red">no</span>'} | Signature valid: ${result.signatureValid ? '<span class="text-green">yes</span>' : '<span class="text-red">no</span>'}</p>
   `;
 }

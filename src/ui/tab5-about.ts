@@ -14,20 +14,21 @@ export function renderAbout(container: HTMLElement): void {
     <div class="card">
       <h2>ML-DSA Parameter Reference (FIPS 204 Table 1)</h2>
       <table class="comparison-table">
+        <caption class="sr-only">ML-DSA parameter sets from FIPS 204 Table 1: security category, key sizes, signature size, dimensions, and modulus.</caption>
         <thead>
           <tr>
-            <th>Parameter Set</th>
-            <th>Security Cat.</th>
-            <th>Public Key</th>
-            <th>Private Key</th>
-            <th>Signature</th>
-            <th>(k, ℓ)</th>
-            <th>q</th>
+            <th scope="col">Parameter Set</th>
+            <th scope="col">Security Cat.</th>
+            <th scope="col">Public Key</th>
+            <th scope="col">Private Key</th>
+            <th scope="col">Signature</th>
+            <th scope="col">(k, ℓ)</th>
+            <th scope="col">q</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>ML-DSA-44</strong></td>
+            <th scope="row"><strong>ML-DSA-44</strong></th>
             <td>2</td>
             <td>1,312 B</td>
             <td>2,560 B</td>
@@ -36,7 +37,7 @@ export function renderAbout(container: HTMLElement): void {
             <td>8,380,417</td>
           </tr>
           <tr>
-            <td><strong>ML-DSA-65</strong></td>
+            <th scope="row"><strong>ML-DSA-65</strong></th>
             <td>3</td>
             <td>1,952 B</td>
             <td>4,032 B</td>
@@ -45,7 +46,7 @@ export function renderAbout(container: HTMLElement): void {
             <td>8,380,417</td>
           </tr>
           <tr>
-            <td><strong>ML-DSA-87</strong></td>
+            <th scope="row"><strong>ML-DSA-87</strong></th>
             <td>5</td>
             <td>2,592 B</td>
             <td>4,896 B</td>
