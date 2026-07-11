@@ -2,16 +2,22 @@
 /* Reference: NIST FIPS 204 — https://csrc.nist.gov/pubs/fips/204/final */
 
 :root {
+  /* Tell the UA which scheme native widgets (selects, scrollbars) should use —
+     without this, mobile browsers paint form-control text for a light page. */
+  color-scheme: dark;
   --bg: #0d1117;
   --surface: #161b22;
   --surface2: #1c2333;
   --border: #30363d;
   --text: #e6edf3;
   --text-muted: #9ea7b3;
-  --accent: #7c6aef;
-  --accent-hover: #9182f3;
+  /* #9182f3 keeps accent text >=4.5:1 on --surface/--surface2 (old #7c6aef was 4.25:1
+     on cards); on-accent button text uses var(--bg) instead of white (6.0:1). */
+  --accent: #9182f3;
+  --accent-hover: #a89df6;
   --green: #3fb950;
   --red: #f85149;
+  --red-hover: #ff6b63;
   --yellow: #d29922;
   --blue: #58a6ff;
   --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Menlo', monospace;
@@ -20,6 +26,7 @@
 }
 
 :root[data-theme='light'] {
+  color-scheme: light;
   --bg: #f6f8fa;
   --surface: #ffffff;
   --surface2: #edf2f7;
@@ -30,6 +37,7 @@
   --accent-hover: #4f35bf;
   --green: #1a7f37;
   --red: #d1242f;
+  --red-hover: #a40e26;
   --yellow: #9a6700;
   --blue: #0969da;
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
@@ -37,13 +45,20 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Paint the page background on html, not just body — body's background otherwise
+   propagates to the canvas and WebKit then reports body as transparent, so
+   axe-core's contrast checks fall back to assuming a white page. */
+html {
+  background-color: var(--bg);
+}
+
 /* Skip link (screen reader / keyboard) */
 .skip-link {
   position: absolute;
   left: -9999px;
   top: 0;
-  background: var(--accent);
-  color: #fff;
+  background-color: var(--accent);
+  color: var(--bg);
   padding: 0.5rem 1rem;
   z-index: 1000;
   font-size: 0.9rem;
@@ -68,7 +83,7 @@
 
 body {
   font-family: var(--sans);
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
   line-height: 1.6;
   min-height: 100vh;
@@ -95,7 +110,7 @@ header .subtitle a:hover { text-decoration: underline; }
   height: 2.6rem;
   border-radius: 50%;
   border: 1px solid var(--border);
-  background: var(--surface2);
+  background-color: var(--surface2);
   color: var(--text);
   cursor: pointer;
   display: inline-flex;
@@ -107,7 +122,7 @@ header .subtitle a:hover { text-decoration: underline; }
 }
 
 .theme-toggle:hover {
-  background: var(--surface);
+  background-color: var(--surface);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -140,7 +155,7 @@ header .subtitle a:hover { text-decoration: underline; }
 
 /* Cards */
 .card {
-  background: var(--surface);
+  background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 1.25rem;
@@ -160,7 +175,7 @@ header .subtitle a:hover { text-decoration: underline; }
   font-family: var(--mono);
   font-size: 0.8rem;
   padding: 0.35rem 0.85rem;
-  background: var(--surface2);
+  background-color: var(--surface2);
   color: var(--text-muted);
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -168,15 +183,17 @@ header .subtitle a:hover { text-decoration: underline; }
   transition: all 0.15s;
 }
 .pill:hover { border-color: var(--accent); color: var(--text); }
-.pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pill.active { background-color: var(--accent); color: var(--bg); border-color: var(--accent); }
 
 /* Buttons */
 .btn {
   font-family: var(--sans);
   font-size: 0.85rem;
   padding: 0.5rem 1.1rem;
-  background: var(--accent);
-  color: #fff;
+  background-color: var(--accent);
+  /* var(--bg) (near-black dark / near-white light) keeps >=4.5:1 on the accent
+     in both themes; #fff was 4.07:1 on the dark-theme accent. */
+  color: var(--bg);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -184,12 +201,12 @@ header .subtitle a:hover { text-decoration: underline; }
   margin-right: 0.5rem;
   margin-bottom: 0.5rem;
 }
-.btn:hover { background: var(--accent-hover); }
+.btn:hover { background-color: var(--accent-hover); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-danger { background: var(--red); }
-.btn-danger:hover { background: #e5443d; }
+.btn-danger { background-color: var(--red); }
+.btn-danger:hover { background-color: var(--red-hover); }
 .btn-secondary {
-  background: var(--surface2);
+  background-color: var(--surface2);
   color: var(--text);
   border: 1px solid var(--border);
 }
@@ -201,7 +218,7 @@ textarea, input[type="text"] {
   font-size: 0.85rem;
   width: 100%;
   padding: 0.6rem;
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -218,7 +235,7 @@ textarea:focus, input[type="text"]:focus {
 .output {
   font-family: var(--mono);
   font-size: 0.78rem;
-  background: var(--bg);
+  background-color: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.6rem;
@@ -238,8 +255,10 @@ textarea:focus, input[type="text"]:focus {
   padding: 0.2rem 0.6rem;
   border-radius: 4px;
 }
-.badge-pass { background: rgba(63, 185, 80, 0.15); color: var(--green); border: 1px solid var(--green); }
-.badge-fail { background: rgba(248, 81, 73, 0.15); color: var(--red); border: 1px solid var(--red); }
+/* 0.10 tint alpha: at 0.15 the tinted backgrounds dropped badge text below 4.5:1
+   (red 4.35:1 dark, green 4.46:1 light). */
+.badge-pass { background-color: rgba(63, 185, 80, 0.1); color: var(--green); border: 1px solid var(--green); }
+.badge-fail { background-color: rgba(248, 81, 73, 0.1); color: var(--red); border: 1px solid var(--red); }
 
 /* Info grid */
 .info-grid {
@@ -249,7 +268,7 @@ textarea:focus, input[type="text"]:focus {
   margin-bottom: 0.75rem;
 }
 .info-item {
-  background: var(--bg);
+  background-color: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.6rem;
@@ -282,7 +301,7 @@ textarea:focus, input[type="text"]:focus {
   color: var(--text);
 }
 .comparison-table tbody tr:hover th,
-.comparison-table tbody tr:hover td { background: var(--surface2); }
+.comparison-table tbody tr:hover td { background-color: var(--surface2); }
 .comparison-table .quantum-yes { color: var(--green); font-weight: 600; }
 .comparison-table .quantum-no { color: var(--red); }
 
@@ -303,7 +322,7 @@ textarea:focus, input[type="text"]:focus {
 .bar-track {
   flex: 1;
   height: 20px;
-  background: var(--bg);
+  background-color: var(--bg);
   border-radius: 4px;
   overflow: hidden;
   position: relative;
@@ -314,9 +333,9 @@ textarea:focus, input[type="text"]:focus {
   transition: width 0.5s ease;
   min-width: 2px;
 }
-.bar-fill.classical { background: var(--blue); }
-.bar-fill.lattice { background: var(--accent); }
-.bar-fill.hash-based { background: var(--yellow); }
+.bar-fill.classical { background-color: var(--blue); }
+.bar-fill.lattice { background-color: var(--accent); }
+.bar-fill.hash-based { background-color: var(--yellow); }
 /* Value rendered outside the fill so its contrast never depends on bar colour */
 .bar-value {
   font-family: var(--mono);
@@ -344,7 +363,7 @@ textarea:focus, input[type="text"]:focus {
   top: 0;
   width: 1.8rem;
   height: 1.8rem;
-  background: var(--surface2);
+  background-color: var(--surface2);
   border: 2px solid var(--border);
   border-radius: 50%;
   display: flex;
@@ -356,9 +375,9 @@ textarea:focus, input[type="text"]:focus {
   transition: all 0.2s;
 }
 .step.active::before {
-  background: var(--accent);
+  background-color: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--bg);
 }
 .step-title {
   font-weight: 600;
@@ -377,7 +396,7 @@ textarea:focus, input[type="text"]:focus {
 .math-block {
   font-family: var(--mono);
   font-size: 0.82rem;
-  background: var(--bg);
+  background-color: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.6rem 0.8rem;
@@ -398,7 +417,7 @@ textarea:focus, input[type="text"]:focus {
   margin-bottom: 1rem;
 }
 .trio-card {
-  background: var(--surface);
+  background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 1rem;
@@ -423,7 +442,7 @@ textarea:focus, input[type="text"]:focus {
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   padding: 0.6rem;
-  background: var(--surface2);
+  background-color: var(--surface2);
   border-radius: 6px;
   font-size: 0.85rem;
 }
@@ -432,8 +451,8 @@ textarea:focus, input[type="text"]:focus {
   content: counter(wf);
   min-width: 1.5rem;
   height: 1.5rem;
-  background: var(--accent);
-  color: #fff;
+  background-color: var(--accent);
+  color: var(--bg);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -452,7 +471,7 @@ textarea:focus, input[type="text"]:focus {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--border);
+  background-color: var(--border);
 }
 .tl-item {
   position: relative;
@@ -466,7 +485,7 @@ textarea:focus, input[type="text"]:focus {
   top: 0.35rem;
   width: 10px;
   height: 10px;
-  background: var(--accent);
+  background-color: var(--accent);
   border-radius: 50%;
 }
 .tl-item .tl-year { font-family: var(--mono); color: var(--accent); font-weight: 600; }
@@ -506,6 +525,10 @@ textarea:focus, input[type="text"]:focus {
 .text-accent { color: var(--accent); }
 .text-sm { font-size: 0.82rem; }
 .mono { font-family: var(--mono); }
+
+/* Footer links: UA default link colors fail contrast on the dark background */
+footer a { color: var(--blue); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
 
 /* Focus-visible styles for keyboard navigation (WCAG 2.4.7) */
 .btn:focus-visible,

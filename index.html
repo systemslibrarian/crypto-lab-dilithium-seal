@@ -144,7 +144,8 @@
       <nav id="tabs" role="tablist" aria-label="Demo sections"></nav>
       <main id="tab-content" role="tabpanel" tabindex="0"></main>
     </div>
-    <footer style="text-align:center; padding: 1.5rem; font-size: 0.85rem; opacity: 0.7; margin-top: 2rem;">
+    <!-- No opacity here: dimming the muted text color drops it below WCAG AA contrast. -->
+    <footer style="text-align:center; padding: 1.5rem; font-size: 0.85rem; color: var(--text-muted); margin-top: 2rem;">
       <div style="margin-bottom: 0.75rem;">
         Related demos:
         <a href="https://systemslibrarian.github.io/crypto-lab-dilithium-reject/" target="_blank" rel="noopener">crypto-lab-dilithium-reject</a>
