@@ -136,9 +136,16 @@
 <!-- END crypto-lab shared header -->
     <a href="#tab-content" class="skip-link">Skip to main content</a>
     <div id="app">
-      <header role="banner">
-        <h1>dilithium-seal</h1>
-        <p class="subtitle">ML-DSA (CRYSTALS-Dilithium) — <a href="https://csrc.nist.gov/pubs/fips/204/final" target="_blank" rel="noopener">NIST FIPS 204</a></p>
+      <header class="cl-hero">
+        <div class="cl-hero-main">
+          <h1 class="cl-hero-title">Dilithium Seal</h1>
+          <p class="cl-hero-sub">ML-DSA · CRYSTALS-Dilithium · NIST FIPS 204</p>
+          <p class="cl-hero-desc">Generate lattice-based keypairs, sign and verify messages, seal documents, and watch a single flipped bit fail verification.</p>
+        </div>
+        <aside class="cl-hero-why" aria-label="Why it matters">
+          <span class="cl-hero-why-label">WHY IT MATTERS</span>
+          <p class="cl-hero-why-text">A quantum computer running Shor's algorithm would break RSA and ECDSA signatures. ML-DSA is the NIST-standardized replacement that keeps signatures unforgeable in the post-quantum era.</p>
+        </aside>
         <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode">🌙</button>
       </header>
       <nav id="tabs" role="tablist" aria-label="Demo sections"></nav>
