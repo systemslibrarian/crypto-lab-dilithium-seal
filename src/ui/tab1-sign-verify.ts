@@ -166,11 +166,15 @@ async function handleKeyGen(): Promise<void> {
   lastSignature = null;
   lastMessage = null;
 
+  const pub = keyPair.publicKey.length;
+  const priv = keyPair.privateKey.length;
   output.innerHTML = `
-    <div class="text-sm mt-1"><strong>Public key</strong> (${keyPair.publicKey.length} bytes):</div>
+    <div class="text-sm mt-1"><strong>Public key</strong> (${pub} bytes):</div>
     <div class="output">${truncateHex(keyPair.publicKey, 32)}</div>
-    <div class="text-sm"><strong>Private key</strong> (${keyPair.privateKey.length} bytes):</div>
+    <p class="annot"><span class="annot-label">This is the public key you'd publish.</span> Anyone can hold it to <em>verify</em> your signatures, but it cannot create them. It encodes (ρ, t₁) — a seed plus the high bits of <span class="mono">t = As₁ + s₂</span>.</p>
+    <div class="text-sm"><strong>Private key</strong> (${priv} bytes):</div>
     <div class="output">${truncateHex(keyPair.privateKey, 32)}</div>
+    <p class="annot secret"><span class="annot-label">This is the secret you must never share.</span> It is <span class="tip" tabindex="0" title="The private key stores the secret vectors s₁ and s₂ plus the low-order bits t₀ of the public value — extra data the verifier never needs. That is why the ML-DSA private key (${priv} B) is larger than the public key (${pub} B).">larger than the public key</span> because it stores the secret vectors <span class="mono">s₁</span>, <span class="mono">s₂</span> and <span class="mono">t₀</span> that only the signer needs.</p>
     <div class="text-sm text-muted">Generated in ${elapsed} ms</div>
   `;
 
@@ -198,6 +202,7 @@ async function handleSign(): Promise<void> {
   output.innerHTML = `
     <div class="text-sm mt-1"><strong>Signature</strong> (${result.signature.length} bytes):</div>
     <div class="output">${truncateHex(result.signature, 48)}</div>
+    <p class="annot"><span class="annot-label">This signature travels with the message.</span> It encodes (c̃, z, h) — the challenge, the short response <span class="mono">z = y + cs₁</span>, and a hint. It binds to these <em>exact</em> bytes: change one byte of the message or the signature and Verify flips to FAILED.</p>
     <div class="text-sm text-muted">Signed in ${result.signingTimeMs.toFixed(2)} ms${note}</div>
   `;
 
@@ -257,12 +262,13 @@ async function handleSeal(): Promise<void> {
   const result = await verifyDocument(lastSealedDoc);
 
   output.innerHTML = `
-    <div class="text-sm mt-1"><strong>Content hash (SHA-256):</strong></div>
+    <div class="text-sm mt-1"><strong>Content hash (SHA-256):</strong> <span class="text-muted">— a fast local integrity check, not the security</span></div>
     <div class="output">${escapeHTML(lastSealedDoc.contentHash)}</div>
-    <div class="text-sm"><strong>Signature</strong> (${atob(lastSealedDoc.signature).length} bytes, truncated):</div>
+    <div class="text-sm"><strong>Signature</strong> (${atob(lastSealedDoc.signature).length} bytes, truncated): <span class="text-muted">— this is what proves authenticity</span></div>
     <div class="output">${escapeHTML(lastSealedDoc.signature.slice(0, 80))}…</div>
     <div class="mt-1"><span class="badge badge-pass">✓ SEALED & VERIFIED</span></div>
     <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)}</p>
+    <p class="text-sm text-muted">Now press <strong>Tamper &amp; Verify</strong> to see which of these two actually catches an edit.</p>
   `;
 
   (document.getElementById('btn-export-seal') as HTMLButtonElement).disabled = false;
@@ -284,20 +290,62 @@ function handleExportSeal(): void {
 async function handleTamperSeal(): Promise<void> {
   if (!lastSealedDoc) return;
 
-  const tampered: SealedDocument = {
-    ...lastSealedDoc,
-    content: lastSealedDoc.content.replace(/\b\w+\b/, 'TAMPERED'),
-  };
+  const tamperedContent = lastSealedDoc.content.replace(/\b\w+\b/, 'TAMPERED');
 
-  const result = await verifyDocument(tampered);
+  // Lesson 1: tamper WITHOUT touching the stored hash — the ML-DSA signature
+  // ALONE must catch it. We rebuild the hash from the (now tampered) content so
+  // the SHA-256 "content integrity" check passes, isolating the signature as the
+  // thing that fails. This proves authenticity comes from the signature, not the hash.
+  const hashHidesTamper = await recomputeHashFor(tamperedContent);
+  const sigOnlyDoc: SealedDocument = {
+    ...lastSealedDoc,
+    content: tamperedContent,
+    contentHash: hashHidesTamper, // make the hash agree with the tampered text
+  };
+  const sigOnly = await verifyDocument(sigOnlyDoc);
+
+  // Lesson 2: the realistic case — hash is left stale, so BOTH signals fire.
+  const bothDoc: SealedDocument = { ...lastSealedDoc, content: tamperedContent };
+  const both = await verifyDocument(bothDoc);
+
   const output = document.getElementById('seal-output')!;
   output.innerHTML += `
-    <div class="mt-2">
-      <span class="badge badge-fail">✗ TAMPER DETECTED</span>
-      <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)}</p>
-      <p class="text-sm text-red">Content integrity: ${result.contentIntact ? 'intact' : 'FAILED'} | Signature: ${result.signatureValid ? 'valid' : 'FAILED'}</p>
+    <div class="mt-2 tamper-lesson">
+      <div class="text-sm"><strong>Lesson 1 — the signature alone catches it.</strong>
+      We tampered the text <em>and</em> recomputed the SHA-256 hash so the hash check <em>passes</em>.
+      The signature still fails, because it is bound to the original bytes:</div>
+      <p class="text-sm mt-1">
+        Content integrity (SHA-256):
+        ${signal(sigOnly.contentIntact, 'passes — but it was just recomputed, so it proves nothing here')}
+        <br>
+        <span class="tip" tabindex="0" title="The SHA-256 hash is a stored convenience for a fast local integrity check. It is NOT what provides security: an attacker who edits the document can recompute the hash. Only the ML-DSA signature — which requires the secret key — proves authenticity.">Signature (ML-DSA)</span>:
+        ${signal(sigOnly.signatureValid, 'FAILS — this is what actually detects the tamper')}
+      </p>
+      <div class="mt-1"><span class="badge ${sigOnly.valid ? 'badge-pass' : 'badge-fail'}">✗ TAMPER DETECTED BY SIGNATURE</span></div>
+
+      <div class="text-sm mt-2"><strong>Lesson 2 — in practice both fire.</strong>
+      Normally the stored hash is left alone, so the quick hash check <em>and</em> the signature both flag the change:</div>
+      <p class="text-sm mt-1">
+        Content integrity (SHA-256): ${signal(both.contentIntact, 'FAILED (quick local check)')}
+        <br>
+        Signature (ML-DSA): ${signal(both.signatureValid, 'FAILED (proves authenticity)')}
+      </p>
+      <p class="text-sm text-muted mt-1">Takeaway: the SHA-256 hash is a convenience for a fast local check. <strong>The signature — not the hash — is what proves authenticity</strong>, because forging it requires the secret key.</p>
     </div>
   `;
+}
+
+/** Text + icon + color status chip (never color alone — WCAG 1.4.1). */
+function signal(pass: boolean, label: string): string {
+  const icon = pass ? '✓' : '✗';
+  const cls = pass ? 'text-green' : 'text-red';
+  return `<span class="${cls}">${icon} ${escapeHTML(label)}</span>`;
+}
+
+async function recomputeHashFor(content: string): Promise<string> {
+  const encoded = new TextEncoder().encode(content);
+  const buf = await crypto.subtle.digest('SHA-256', encoded);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function handleVerifySealJSON(): Promise<void> {

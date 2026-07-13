@@ -4,6 +4,8 @@
 
 This project is a browser demo for ML-DSA (CRYSTALS-Dilithium), including ML-DSA-44, ML-DSA-65, and ML-DSA-87 parameter sets from NIST FIPS 204. It demonstrates digital signature creation and verification, plus document sealing and tamper checks using the same primitive. The algorithm solves the problem of authenticating messages and proving integrity in a way intended to remain secure against quantum adversaries. ML-DSA is an asymmetric, post-quantum digital signature scheme based on lattice assumptions (Module-LWE and Module-SIS).
 
+The "How It Works" tab now opens with a plain-language "prove you know a secret without revealing it" scaffold, then lets you drive the concepts yourself: an **interactive Fiat-Shamir-with-aborts animation** where pressing *Sign* runs the real reject-and-retry loop — rejecting oversized responses `z = y + c·s₁` that would leak the secret and showing the reject count — and an **interactive Module-LWE panel** with an error slider that flips the problem between trivially solvable (`e = 0`) and quantum-hard. These visualizations compute real modular lattice arithmetic in the browser at an illustrative small scale; the spec-accurate, KAT-backed signing/verification path is unchanged (`@noble/post-quantum`, FIPS 204). The seal demo's tamper flow now separates the two lessons explicitly — the ML-DSA signature alone catches an edit even when the SHA-256 hash is recomputed to agree — so learners see that authenticity comes from the signature, not the hash.
+
 ## When to Use It
 
 - Use it for certificate and identity-signing workflows that need post-quantum migration planning. It fits because ML-DSA is standardized (FIPS 204) and designed for public-key authentication.

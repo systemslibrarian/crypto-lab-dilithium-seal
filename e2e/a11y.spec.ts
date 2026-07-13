@@ -38,10 +38,18 @@ async function revealCollapsibles(page: Page): Promise<void> {
       (details as HTMLDetailsElement).open = true;
     }
     // "How It Works" stepper: reveal every step body (normally display:none
-    // until the step has .active).
+    // until the step has .active). The disclosure state lives on the step's
+    // title <button> (aria-expanded); the body shows via the .active class.
     for (const step of document.querySelectorAll('.step')) {
       step.classList.add('active');
-      step.setAttribute('aria-expanded', 'true');
+    }
+    for (const btn of document.querySelectorAll('.step .step-title')) {
+      btn.setAttribute('aria-expanded', 'true');
+    }
+    // Expand every <details> "show the exact algebra / comparison" block so its
+    // math is scanned too.
+    for (const d of document.querySelectorAll('.step details')) {
+      (d as HTMLDetailsElement).open = true;
     }
   });
 }
