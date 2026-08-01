@@ -106,7 +106,7 @@ export function renderFiatShamir(host: HTMLElement): void {
       if (i >= run.attempts.length) {
         stats.innerHTML = rejects === 0
           ? `Accepted on the first try (0 rejects this time).`
-          : `Rejected <strong>${rejects}</strong> oversized response${rejects === 1 ? '' : 's'}, then accepted attempt ${run.attempts.length}. Real ML-DSA averages ~4–7 tries.`;
+          : `Rejected <strong>${rejects}</strong> oversized response${rejects === 1 ? '' : 's'}, then accepted attempt ${run.attempts.length}. Real ML-DSA averages ~4–5 tries (4.25 / 5.1 / 3.85 for ML-DSA-44 / -65 / -87).`;
         runBtn.disabled = false;
         rerollBtn.disabled = false;
         return;

@@ -89,7 +89,7 @@ const STEPS: StepInfo[] = [
           <div class="label-tag">5. Output</div>
           Signature: <strong>(c̃, z, h)</strong> where h is a hint vector
         </div>
-        <p class="mt-1">The abort–retry loop runs 4–7 times on average. Without aborts, statistical analysis of many signatures could recover s₁.</p>
+        <p class="mt-1">The abort–retry loop runs about 4–5 times on average — the Dilithium specification's expected repetition counts are 4.25, 5.1 and 3.85 for ML-DSA-44, -65 and -87. Without aborts, statistical analysis of many signatures could recover s₁.</p>
       </details>
     `,
   },
@@ -186,7 +186,7 @@ export function renderHowItWorks(container: HTMLElement): void {
     <div class="card">
       <h2>Attribution</h2>
       <p class="text-sm text-muted">CRYSTALS-Dilithium was designed by Léo Ducas, Eike Kiltz, Tancrède Lepoint, Vadim Lyubashevsky, Peter Schwabe, Gregor Seiler, and Damien Stehlé.</p>
-      <p class="text-sm text-muted mt-1">Submitted to the NIST Post-Quantum Cryptography competition in 2017. Selected as a finalist in 2022. Standardized as <strong>ML-DSA (FIPS 204)</strong> in August 2024.</p>
+      <p class="text-sm text-muted mt-1">Submitted to the NIST Post-Quantum Cryptography competition in 2017. Selected as a third-round finalist in 2020, then chosen for standardization in 2022. Standardized as <strong>ML-DSA (FIPS 204)</strong> in August 2024.</p>
       <p class="text-sm text-muted mt-1"><strong>Connection to ML-KEM:</strong> Both ML-DSA and ML-KEM (FIPS 203, demonstrated in <a href="https://github.com/systemslibrarian/crypto-compare" target="_blank" rel="noopener">kyber-vault</a>) use the Module-LWE problem — the same mathematical foundation applied to different cryptographic goals (signatures vs key encapsulation).</p>
     </div>
   `;
