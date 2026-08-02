@@ -63,6 +63,16 @@ function attemptCard(a: SignAttempt, idx: number): string {
     </div>`;
 }
 
+export function signRunSummary(run: { attempts: Pick<SignAttempt, 'accepted'>[] }): string {
+  const accepted = run.attempts.at(-1)?.accepted === true;
+  const rejects = run.attempts.filter((attempt) => !attempt.accepted).length;
+  if (!accepted) {
+    return `Stopped at the safety cap after <strong>${rejects}</strong> rejected attempts; this run did not produce an accepted response.`;
+  }
+  if (rejects === 0) return 'Accepted on the first try (0 rejects this run).';
+  return `This illustrative loop rejected <strong>${rejects}</strong> oversized response${rejects === 1 ? '' : 's'}, then accepted attempt ${run.attempts.length}.`;
+}
+
 export function renderFiatShamir(host: HTMLElement): void {
   const { N, Q, GAMMA1, BETA, TAU, ETA, REJECT_BOUND } = FS_PARAMS;
   host.innerHTML = `
@@ -100,13 +110,9 @@ export function renderFiatShamir(host: HTMLElement): void {
     list.innerHTML = '';
     stats.textContent = '';
     const run = runSign();
-    const rejects = run.attempts.length - 1;
-
     const reveal = (i: number) => {
       if (i >= run.attempts.length) {
-        stats.innerHTML = rejects === 0
-          ? `Accepted on the first try (0 rejects this time).`
-          : `Rejected <strong>${rejects}</strong> oversized response${rejects === 1 ? '' : 's'}, then accepted attempt ${run.attempts.length}. Real ML-DSA averages ~4–5 tries (4.25 / 5.1 / 3.85 for ML-DSA-44 / -65 / -87).`;
+        stats.innerHTML = signRunSummary(run);
         runBtn.disabled = false;
         rerollBtn.disabled = false;
         return;

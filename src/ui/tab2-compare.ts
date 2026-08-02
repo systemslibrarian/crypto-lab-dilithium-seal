@@ -70,7 +70,7 @@ export function renderCompare(container: HTMLElement): void {
       <p class="text-sm text-muted mb-1">Measure ML-DSA signing throughput in your browser. Each variant runs 50 sign iterations.</p>
       <button class="btn" id="btn-benchmark">Run Benchmark</button>
       <div id="bench-output" role="status" aria-live="polite" aria-atomic="true"></div>
-      <p class="text-sm text-muted mt-2"><em>Ed25519 is typically 10–50× faster than ML-DSA in software. The size and speed cost is the price of quantum resistance.</em></p>
+      <p class="text-sm text-muted mt-2"><em>Performance depends on the implementation, runtime, and device. Run this browser benchmark for a measured Ed25519-to-ML-DSA comparison on this page.</em></p>
     </div>
 
     <div class="card">
@@ -176,6 +176,16 @@ async function runBenchmark(): Promise<void> {
     html += `<tr><th scope="row"><strong>${r.name}</strong></th><td>${ops}</td><td>${rel}</td></tr>`;
   }
   html += '</tbody></table>';
+  const ed25519 = results.find((result) => result.name === 'Ed25519');
+  const mldsa = results.filter((result) => result.name.startsWith('ML-DSA') && result.opsPerSec > 0);
+  if (ed25519 && ed25519.opsPerSec > 0 && mldsa.length > 0) {
+    const comparisons = mldsa
+      .map((result) => `${result.name}: ${(ed25519.opsPerSec / result.opsPerSec).toFixed(2)}×`)
+      .join(' · ');
+    html += `<p class="text-sm text-muted"><strong>Measured Ed25519 throughput ratio:</strong> ${comparisons}. Ratios above 1 mean Ed25519 was faster in this run.</p>`;
+  } else {
+    html += '<p class="text-sm text-muted">A measured Ed25519 ratio is unavailable because this browser did not provide Ed25519 signing.</p>';
+  }
   output.innerHTML = html;
   btn.disabled = false;
 }

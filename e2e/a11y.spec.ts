@@ -91,3 +91,23 @@ test('no WCAG A/AA violations in light theme', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await scanAllTabs(page);
 });
+
+test('signature tamper is one-way until a fresh signature is created', async ({ page }) => {
+  await page.goto('.');
+  await page.locator('#btn-keygen').click();
+  await expect(page.locator('#btn-sign')).toBeEnabled();
+  await page.locator('#btn-sign').click();
+  await expect(page.locator('#btn-tamper-sig')).toBeEnabled();
+  await page.locator('#btn-tamper-sig').click();
+  await expect(page.locator('#btn-tamper-sig')).toBeDisabled();
+  await page.locator('#btn-verify').click();
+  await expect(page.locator('#verify-output')).toContainText('FAILED');
+});
+
+test('benchmark description defers to measured browser ratios', async ({ page }) => {
+  await page.goto('.');
+  await page.locator('#tab-btn-compare').click();
+  const content = page.locator('#tab-content');
+  await expect(content).toContainText('measured Ed25519-to-ML-DSA comparison');
+  await expect(content).not.toContainText('typically 10–50× faster');
+});

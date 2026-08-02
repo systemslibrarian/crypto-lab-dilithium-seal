@@ -245,8 +245,9 @@ function handleTamperMessage(): void {
 function handleTamperSignature(): void {
   if (!lastSignature) return;
   lastSignature[10] ^= 0xff;
+  (document.getElementById('btn-tamper-sig') as HTMLButtonElement).disabled = true;
   document.getElementById('verify-output')!.innerHTML =
-    '<p class="text-sm text-red mt-1">⚠ Signature tampered (1 byte flipped) — click Verify to see it fail.</p>';
+    '<p class="text-sm text-red mt-1">⚠ Signature tampered (1 byte flipped once) — click Verify to see it fail. Sign again to create a fresh signature.</p>';
 }
 
 async function handleSeal(): Promise<void> {
