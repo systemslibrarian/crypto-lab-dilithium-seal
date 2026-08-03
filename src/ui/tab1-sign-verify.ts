@@ -119,6 +119,7 @@ function renderVariantPills(): void {
 }
 
 function selectVariant(v: MLDSAVariant, container: HTMLElement): void {
+  const changed = v !== currentVariant;
   currentVariant = v;
   container.querySelectorAll('.pill').forEach((p) => {
     const isActive = p.textContent === v.toUpperCase();
@@ -127,6 +128,59 @@ function selectVariant(v: MLDSAVariant, container: HTMLElement): void {
     p.setAttribute('tabindex', isActive ? '0' : '-1');
   });
   updateParamInfo();
+  if (changed) resetKeyMaterial();
+}
+
+/**
+ * A keypair belongs to exactly one parameter set — an ML-DSA-65 secret key is
+ * 4032 B and `ml_dsa44.sign()` rejects it outright. Switching the parameter set
+ * therefore invalidates every artifact on the page. Before this reset, the stale
+ * keypair stayed live and the next Sign threw
+ * ("Uint8Array expected of length 2560, got length=4032") from inside an async
+ * handler, leaving the page stuck on its spinner with no error shown; Verify and
+ * Seal failed the same silent way.
+ */
+function resetKeyMaterial(): void {
+  keyPair = null;
+  lastSealedDoc = null;
+
+  clearSignatureState();
+  for (const id of ['btn-sign', 'btn-seal', 'btn-export-seal', 'btn-tamper-seal']) {
+    const btn = document.getElementById(id) as HTMLButtonElement | null;
+    if (btn) btn.disabled = true;
+  }
+  const seal = document.getElementById('seal-output');
+  if (seal) seal.innerHTML = '';
+
+  const keygen = document.getElementById('keygen-output');
+  if (keygen) {
+    keygen.innerHTML = `<p class="text-sm text-muted mt-1" id="variant-reset-note">Parameter set is now ${currentVariant.toUpperCase()} — generate a new keypair to use it. Keys and signatures are bound to one parameter set.</p>`;
+  }
+}
+
+/**
+ * Drop the current signature and every control and pane that depends on it.
+ *
+ * `handleKeyGen` nulls `lastSignature`/`lastMessage` but used to leave the DOM
+ * alone, so a fresh keypair inherited the previous run's "✓ VERIFIED — the
+ * ML-DSA-65 signature is valid" badge and the previous signature hex. Verify
+ * then early-returned on the null signature, so the stale pass sat there
+ * unchallenged: a passing verdict on screen for a keypair that had signed
+ * nothing. Clearing here keeps the rendered verdict tied to a signature that
+ * actually exists.
+ */
+function clearSignatureState(): void {
+  lastSignature = null;
+  lastMessage = null;
+
+  for (const id of ['btn-verify', 'btn-tamper-msg', 'btn-tamper-sig']) {
+    const btn = document.getElementById(id) as HTMLButtonElement | null;
+    if (btn) btn.disabled = true;
+  }
+  for (const id of ['sign-output', 'verify-output']) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  }
 }
 
 function updateParamInfo(): void {
@@ -163,8 +217,9 @@ async function handleKeyGen(): Promise<void> {
   keyPair = await generateKeyPair(currentVariant);
   const elapsed = (performance.now() - start).toFixed(1);
 
-  lastSignature = null;
-  lastMessage = null;
+  // The new keypair has signed nothing yet — retire the previous run's
+  // signature, its verdict, and the controls that act on it.
+  clearSignatureState();
 
   const pub = keyPair.publicKey.length;
   const priv = keyPair.privateKey.length;
