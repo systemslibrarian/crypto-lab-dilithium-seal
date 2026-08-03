@@ -16,12 +16,12 @@ export default defineConfig({
     // Without the build, a source change that fails to compile leaves the last
     // good bundle in place and the suite passes green against code that no
     // longer builds — which silently invalidates mutation checks.
-    command: 'npm run build && npm run preview -- --port 4221 --strictPort',
-    url: 'http://localhost:4221/crypto-lab-dilithium-seal/',
+    command: 'npm run build && npm run preview -- --port 4625 --strictPort',
+    url: 'http://localhost:4625/crypto-lab-dilithium-seal/',
     reuseExistingServer: !process.env.CI,
   },
   use: {
-    baseURL: 'http://localhost:4221/crypto-lab-dilithium-seal/',
+    baseURL: 'http://localhost:4625/crypto-lab-dilithium-seal/',
     colorScheme: 'dark',
   },
 });
