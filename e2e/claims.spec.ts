@@ -755,7 +755,26 @@ test('benchmark results are internally consistent: relative column and Ed25519 r
 test.describe('interactive visualizations', () => {
   // Reduced motion makes the Fiat-Shamir reveal synchronous, so the assertions
   // see the full run instead of racing a 650 ms-per-attempt animation.
-  test.use({ reducedMotion: 'reduce' });
+  //
+  // This MUST be page.emulateMedia, not test.use({ reducedMotion: 'reduce' }).
+  // On Playwright 1.61.1 the test.use form silently never reaches the page —
+  // matchMedia('(prefers-reduced-motion: reduce)') still reports false — so the
+  // animation kept running at full speed and these assertions were racing it,
+  // passing only on the generous timeouts below. emulateMedia persists across
+  // navigation, so setting it here covers each test's own goto.
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
+
+  // Guards the mechanism itself: an emulation that quietly no-ops is worse than
+  // none, because the comment above reads as if it were handled.
+  test('reduced-motion emulation actually reaches the page', async ({ page }) => {
+    await page.goto('.');
+    expect(
+      await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches),
+      'reduced-motion emulation did not reach the page',
+    ).toBe(true);
+  });
 
   test('the Fiat-Shamir loop rejects exactly the responses its own rule rejects', async ({
     page,
