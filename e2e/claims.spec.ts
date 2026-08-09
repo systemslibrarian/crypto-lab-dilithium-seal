@@ -1028,3 +1028,18 @@ test('the PQC Trio tab names all three FIPS standards and marks this one as ML-D
   await page.locator('#tab-btn-about').click();
   await expect(page.locator('#tab-content')).toContainText('NIST FIPS 204');
 });
+
+test('the Compare tab never states an unmeasured speed ratio', async ({ page }) => {
+  await page.goto('.');
+  await page.locator('#tab-btn-compare').click();
+  const content = page.locator('#tab-content');
+
+  // This page once carried the fixed claim "typically 10-50x faster", which is
+  // an assertion about hardware it cannot see. The standing copy defers to the
+  // benchmark the reader can run on this page instead, and this is the guard
+  // that keeps it that way. (Moved here from the a11y spec, which had no
+  // business holding a claims assertion.)
+  await expect(content).toContainText('measured Ed25519-to-ML-DSA comparison');
+  await expect(content).not.toContainText('typically 10–50× faster');
+  await expect(content).not.toContainText(/\d+\s*[–-]\s*\d+×\s*faster/);
+});

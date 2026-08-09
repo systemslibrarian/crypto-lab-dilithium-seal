@@ -13,7 +13,7 @@ export function renderAbout(container: HTMLElement): void {
 
     <div class="card">
       <h2>ML-DSA Parameter Reference (FIPS 204 Table 1)</h2>
-      <table class="comparison-table">
+      <table class="comparison-table" tabindex="0">
         <caption class="sr-only">ML-DSA parameter sets from FIPS 204 Table 1: security category, key sizes, signature size, dimensions, and modulus.</caption>
         <thead>
           <tr>

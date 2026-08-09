@@ -30,7 +30,7 @@ export function renderCompare(container: HTMLElement): void {
       <h2>ML-DSA vs Classical Signatures</h2>
       <p class="text-sm text-muted mb-1">Size comparison across classical and post-quantum digital signature schemes.</p>
 
-      <table class="comparison-table">
+      <table class="comparison-table" tabindex="0">
         <caption class="sr-only">Public key size, signature size, quantum safety, and hardness assumption for classical and post-quantum signature schemes.</caption>
         <thead>
           <tr>
@@ -167,7 +167,7 @@ async function runBenchmark(): Promise<void> {
     results.push({ name: 'Ed25519', opsPerSec: -1 });
   }
 
-  let html = '<table class="comparison-table mt-1"><caption class="sr-only">Signing throughput benchmark results in operations per second.</caption><thead><tr><th scope="col">Scheme</th><th scope="col">ops/sec</th><th scope="col">Relative</th></tr></thead><tbody>';
+  let html = '<table class="comparison-table mt-1" tabindex="0"><caption class="sr-only">Signing throughput benchmark results in operations per second.</caption><thead><tr><th scope="col">Scheme</th><th scope="col">ops/sec</th><th scope="col">Relative</th></tr></thead><tbody>';
   const maxOps = Math.max(...results.filter((r) => r.opsPerSec > 0).map((r) => r.opsPerSec));
 
   for (const r of results) {

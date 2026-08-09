@@ -37,13 +37,13 @@ export function renderPQCTrio(container: HTMLElement): void {
       <p class="text-sm text-muted mb-1">How all three standards work together for authenticated, confidential, post-quantum secure communication.</p>
 
       <div class="workflow">
-        <div class="wf-step">Bob publishes his <strong>ML-DSA public key</strong> (identity) and <strong>ML-KEM public key</strong> (encryption).</div>
-        <div class="wf-step">Alice verifies Bob's <strong>ML-DSA signature</strong> on his ML-KEM public key — authenticated key exchange.</div>
-        <div class="wf-step">Alice <strong>encapsulates a shared secret</strong> using Bob's ML-KEM public key (kyber-vault).</div>
-        <div class="wf-step">Alice encrypts her message with <strong>AES-256-GCM</strong> using the shared secret.</div>
-        <div class="wf-step">Alice <strong>signs the ciphertext</strong> with her ML-DSA private key.</div>
-        <div class="wf-step">Bob <strong>verifies</strong> Alice's signature, <strong>decapsulates</strong> the shared secret, <strong>decrypts</strong> the message.</div>
-        <div class="wf-step"><strong>Result:</strong> authenticated, confidential, post-quantum secure end-to-end communication.</div>
+        <div class="wf-step"><span class="wf-text">Bob publishes his <strong>ML-DSA public key</strong> (identity) and <strong>ML-KEM public key</strong> (encryption).</span></div>
+        <div class="wf-step"><span class="wf-text">Alice verifies Bob's <strong>ML-DSA signature</strong> on his ML-KEM public key — authenticated key exchange.</span></div>
+        <div class="wf-step"><span class="wf-text">Alice <strong>encapsulates a shared secret</strong> using Bob's ML-KEM public key (kyber-vault).</span></div>
+        <div class="wf-step"><span class="wf-text">Alice encrypts her message with <strong>AES-256-GCM</strong> using the shared secret.</span></div>
+        <div class="wf-step"><span class="wf-text">Alice <strong>signs the ciphertext</strong> with her ML-DSA private key.</span></div>
+        <div class="wf-step"><span class="wf-text">Bob <strong>verifies</strong> Alice's signature, <strong>decapsulates</strong> the shared secret, <strong>decrypts</strong> the message.</span></div>
+        <div class="wf-step"><span class="wf-text"><strong>Result:</strong> authenticated, confidential, post-quantum secure end-to-end communication.</span></div>
       </div>
     </div>
 

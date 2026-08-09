@@ -35,7 +35,12 @@ export function renderSignVerify(container: HTMLElement): void {
       <div class="section">
         <div class="section-title" id="variant-label">Parameter Set</div>
         <div class="pills" id="variant-pills" role="radiogroup" aria-labelledby="variant-label"></div>
-        <div class="info-grid" id="param-info" aria-label="Parameter sizes"></div>
+        <!-- role="group": aria-label is PROHIBITED on a role-less div and is
+             silently discarded, so this grid had no accessible name at all. axe
+             files that under its "incomplete" bucket (aria-prohibited-attr) and
+             never under violations, which is why a violations-only gate could
+             not see it. -->
+        <div class="info-grid" id="param-info" role="group" aria-label="Parameter sizes"></div>
       </div>
 
       <div class="section">

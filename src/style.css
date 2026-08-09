@@ -223,7 +223,11 @@ header .subtitle a { color: var(--blue); text-decoration: underline; }
   color: var(--text);
   border: 1px solid var(--border);
 }
-.btn-secondary:hover { border-color: var(--accent); }
+/* Restate the background. `.btn:hover` is (0,2,0) and `.btn-secondary` only
+   (0,1,0), so a hovered secondary button was repainted with --accent-hover
+   while keeping `color: var(--text)` — measured 2.02:1 (dark) and 1.95:1
+   (light). The hover cue is the accent border, which this rule already sets. */
+.btn-secondary:hover { background-color: var(--surface2); border-color: var(--accent); }
 
 /* Inputs */
 textarea, input[type="text"] {
@@ -472,6 +476,14 @@ textarea:focus, input[type="text"]:focus {
   border-radius: 6px;
   font-size: 0.85rem;
 }
+/* The step's prose is ONE flex item. `.wf-step` is a flex container, and a flex
+   container blockifies every direct child — so with the sentence written as bare
+   inline content, each <strong> became its own flex item and the 0.75rem `gap`
+   was inserted between every emphasised phrase and the words around it. On a
+   380px viewport the un-wrappable row of items pushed the document to 509px
+   (WCAG 1.4.10). `min-width: 0` lets the span shrink past its longest word. */
+.wf-text { min-width: 0; }
+
 .wf-step::before {
   counter-increment: wf;
   content: counter(wf);
@@ -585,6 +597,15 @@ a:focus-visible {
   border-radius: 2px;
 }
 #tab-content:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 6px;
+}
+/* Below 768px `.comparison-table` becomes its own `overflow-x` scroller and it
+   contains nothing focusable, so it carries `tabindex="0"` to stay operable by
+   keyboard (WCAG 2.1.1). A focus target with no visible ring is a 2.4.7 failure,
+   so it takes the same one. */
+.comparison-table:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
   border-radius: 6px;
