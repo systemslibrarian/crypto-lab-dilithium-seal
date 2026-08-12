@@ -190,7 +190,12 @@ header .subtitle a { color: var(--blue); text-decoration: underline; }
   padding: 0.35rem 0.85rem;
   background-color: var(--surface2);
   color: var(--text-muted);
-  border: 1px solid var(--border);
+  /* --control-border, not --border. `.pill`'s fill is --surface2, within ~1.1:1
+     of the panel behind it, so the border is what delineates the control, and
+     --border is a surface-divider token that measured 1.42:1 against that fill.
+     --control-border is the palette's own control token and was already defined
+     in both themes; it simply had not been applied here. */
+  border: 1px solid var(--control-border);
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.15s;
@@ -221,7 +226,10 @@ header .subtitle a { color: var(--blue); text-decoration: underline; }
 .btn-secondary {
   background-color: var(--surface2);
   color: var(--text);
-  border: 1px solid var(--border);
+  /* --control-border for the same reason as `.pill`: this button's fill is
+     --surface2 and --border measured 1.42:1 against it, under the 3:1 that
+     SC 1.4.11 asks of a control boundary. */
+  border: 1px solid var(--control-border);
 }
 /* Restate the background. `.btn:hover` is (0,2,0) and `.btn-secondary` only
    (0,1,0), so a hovered secondary button was repainted with --accent-hover
