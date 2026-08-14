@@ -1,5 +1,11 @@
 import { test } from '@playwright/test';
-import { boot, driveAllStates, NARROW, reportCollected } from './gate';
+import {
+  boot,
+  driveAllStates,
+  expectBaselineNotStale,
+  NARROW,
+  reportCollected,
+} from './gate';
 
 /**
  * WCAG A/AA regression gate.
@@ -24,6 +30,15 @@ import { boot, driveAllStates, NARROW, reportCollected } from './gate';
  * See `gate.ts` for why nothing is injected into the page, why no panel is
  * force-revealed, why the lab's defaults are asserted rather than assumed, and
  * why `violations` is not the whole oracle.
+ *
+ * `expectBaselineNotStale` runs after each drive. It is the third of the three
+ * rules the non-text baseline claims to enforce — a finding not listed fails, a
+ * listed finding that got WORSE fails, and a listed finding that has been FIXED
+ * fails until its entry is deleted — and it is the one that keeps the file a
+ * to-do list rather than an allowlist. It was defined and exported in `gate.ts`
+ * and nothing called it, so that rule had never run and the baseline could only
+ * grow. It is called here, after `driveAllStates`, because it asserts over the
+ * states the whole drive reached.
  */
 
 for (const theme of ['dark', 'light'] as const) {
@@ -31,6 +46,7 @@ for (const theme of ['dark', 'light'] as const) {
     test.setTimeout(900_000);
     await boot(page, theme);
     await driveAllStates(page, theme);
+    expectBaselineNotStale();
     reportCollected();
   });
 
@@ -39,6 +55,7 @@ for (const theme of ['dark', 'light'] as const) {
     await page.setViewportSize(NARROW);
     await boot(page, theme);
     await driveAllStates(page, `${theme} @380px`);
+    expectBaselineNotStale();
     reportCollected();
   });
 }
