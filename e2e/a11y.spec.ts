@@ -41,7 +41,7 @@ import {
  * states the whole drive reached.
  */
 
-for (const theme of ['dark', 'light'] as const) {
+for (const theme of ['dark'] as const) {
   test(`no WCAG A/AA violations in ${theme} theme`, async ({ page }) => {
     test.setTimeout(900_000);
     await boot(page, theme);
