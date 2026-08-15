@@ -26,6 +26,14 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # The vitest suite: ML-DSA sign/verify and the claim-evidence checks.
+      # Deploy previously ran only test:a11y, so neither gated a publish — a
+      # build whose signatures verified nothing could ship as long as the
+      # page passed axe.
+      - name: Unit tests
+        run: npm test
+
       - run: npm run build
 
       - name: Install Playwright browser
