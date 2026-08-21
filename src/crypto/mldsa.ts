@@ -4,9 +4,20 @@
  * Reference: https://csrc.nist.gov/pubs/fips/204/final
  *
  * Parameter sizes sourced from FIPS 204 Table 1.
+ *
+ * Note on the @noble/post-quantum call shape: since v0.4 the signer surface takes
+ * the message first -- `sign(msg, secretKey)` and `verify(sig, msg, publicKey)` --
+ * where 0.2.x took the key first. The wrappers below keep this module's own
+ * key-first argument order so callers in src/ui are unaffected, and reorder at the
+ * boundary. Getting that backwards no longer silently mis-signs: the library
+ * length-checks each argument and throws, which is why the round-trip tests in
+ * src/__tests__/mldsa.test.ts catch it.
+ *
+ * The subpath specifier must carry its `.js` extension -- the v0.7 export map
+ * publishes `./ml-dsa.js` only, and the extensionless form is no longer resolvable.
  */
 
-import { ml_dsa44, ml_dsa65, ml_dsa87 } from '@noble/post-quantum/ml-dsa';
+import { ml_dsa44, ml_dsa65, ml_dsa87 } from '@noble/post-quantum/ml-dsa.js';
 
 export type MLDSAVariant = 'ml-dsa-44' | 'ml-dsa-65' | 'ml-dsa-87';
 
@@ -62,7 +73,8 @@ export async function sign(
 ): Promise<MLDSASignResult> {
   const impl = VARIANT_MAP[variant];
   const start = performance.now();
-  const signature = impl.sign(privateKey, message);
+  // noble argument order: (message, secretKey).
+  const signature = impl.sign(message, privateKey);
   const signingTimeMs = performance.now() - start;
   return { signature, message, variant, signingTimeMs };
 }
@@ -74,5 +86,6 @@ export async function verify(
   variant: MLDSAVariant
 ): Promise<boolean> {
   const impl = VARIANT_MAP[variant];
-  return impl.verify(publicKey, message, signature);
+  // noble argument order: (signature, message, publicKey).
+  return impl.verify(signature, message, publicKey);
 }
