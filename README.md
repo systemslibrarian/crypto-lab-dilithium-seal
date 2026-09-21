@@ -75,6 +75,65 @@ Drafts are labelled as drafts. NIST IR 8547, the transition-timeline document,
 is still an **Initial Public Draft**, and the page says so wherever its dates
 appear.
 
+## Reproducible Benchmark Evidence
+
+The old panel ran 50 signatures per parameter set in one blocking loop, divided
+the total by the elapsed time, and printed an ops/sec figure. No warm-up, so the
+first measurements included JIT compilation. No distribution, so one
+rejection-heavy outlier moved the answer invisibly. No key-generation or
+verification timing at all, no sizes, and **no record of the browser, machine or
+clock** — which made the number incomparable with anything, including a second
+run on the same laptop.
+
+### Methodology
+
+| | |
+|---|---|
+| Operations | key generation, signing, verification — for **all three** parameter sets |
+| Warm-up | 10 iterations, discarded |
+| Measured | 50 iterations, **each timed individually** |
+| Reported | median, p95, mean, min, max, n |
+| Raw samples | preserved in order, exported in full |
+| Percentile method | linear interpolation between closest ranks (R type-7 / NumPy default) |
+| Baseline | Ed25519 via Web Crypto, same methodology, **measured in the same run** |
+
+Median and p95 rather than a mean alone because ML-DSA signing is a rejection
+loop: the distribution has a long right tail and the mean sits where no
+signature actually lands. A typical run shows ML-DSA-44 signing at a 2.2 ms
+median against a 5.7 ms p95.
+
+### Every result carries its environment
+
+Browser and version, operating system, logical processors, timer source,
+**measured timer resolution**, cross-origin-isolation status, library name and
+version, warm-up and sample counts, and a UTC timestamp. There is no code path
+that renders or exports a timing without them.
+
+### When the clock is not good enough, it says so
+
+`performance.now()` is deliberately coarsened to 0.1 ms in a page that is not
+cross-origin isolated. Ed25519 signs in roughly 50 µs — *below that*. Rather
+than print `0.000 ms` and divide by it, the panel reports timings under the
+resolution as `< 0.100`, converts the affected speed ratios into explicit
+**lower bounds** (`> 30×`), and explains why. Size ratios stay exact.
+
+### Exports
+
+- **JSON** — environment, methodology, summaries and **every raw sample in the
+  order taken**. The archival artifact: the summary can be recomputed from the
+  samples it claims to describe.
+- **CSV** — one row per raw measurement, with the environment repeated on every
+  row. Deliberate denormalisation: a metadata header block is lost the moment
+  someone sorts the file in a spreadsheet, and a timing separated from the
+  machine it came from is not a measurement.
+
+### The interface does not freeze
+
+Control returns to the event loop between iterations, outside the timed bracket.
+This is measured rather than argued: a browser test counts animation frames
+throughout a full run (~600 operations) and fails if the longest gap between
+them exceeds 750 ms, and a second test switches tabs mid-run.
+
 ## Real ML-DSA vs the Teaching Models
 
 Every panel carries one of four labels, stated in words next to the panel:

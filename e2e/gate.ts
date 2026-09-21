@@ -639,8 +639,12 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   await scanAt('Compare tab');
 
   await page.locator('#btn-benchmark').click();
-  await expect(page.locator('#bench-output table')).toBeVisible({ timeout: 300_000 });
-  await expect(page.locator('#bench-output tbody tr')).toHaveCount(4);
+  // Three operations for each of three parameter sets.
+  await expect(page.locator('#bench-results')).toBeVisible({ timeout: 300_000 });
+  await expect(page.locator('#bench-results tbody tr')).toHaveCount(9);
+  await expect(page.locator('#bench-sizes tbody tr')).toHaveCount(3);
+  await expect(page.locator('#bench-environment')).toBeVisible();
+  await expect(page.locator('#btn-bench-json')).toBeEnabled();
   await scanAt('benchmark measured in this browser');
 
   // ── Tab 3: the accordion, its two visualizations, its two <details> ──────

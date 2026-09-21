@@ -3,8 +3,8 @@
  * Reference: NIST FIPS 204 — https://csrc.nist.gov/pubs/fips/204/final
  */
 
-import { generateKeyPair, sign, type MLDSAVariant } from '../crypto/mldsa';
 import { cite } from './provenance';
+import { renderBenchmarkPanel, bindBenchmarkPanel } from './benchmark-panel';
 import { fidelityBadge } from './fidelity';
 
 interface SchemeInfo {
@@ -70,14 +70,7 @@ export function renderCompare(container: HTMLElement): void {
       <div class="bar-chart" id="sig-bars"></div>
     </div>
 
-    <div class="card">
-      <h2>Signing Speed Benchmark</h2>
-      ${fidelityBadge('values', 'benchmark')}
-      <p class="text-sm text-muted mb-1">Measure ML-DSA signing throughput in your browser. Each variant runs 50 sign iterations.</p>
-      <button class="btn" id="btn-benchmark">Run Benchmark</button>
-      <div id="bench-output" role="status" aria-live="polite" aria-atomic="true"></div>
-      <p class="text-sm text-muted mt-2"><em>Performance depends on the implementation, runtime, and device. Run this browser benchmark for a measured Ed25519-to-ML-DSA comparison on this page.</em></p>
-    </div>
+    ${renderBenchmarkPanel()}
 
     <div class="card">
       <h2>When to Use ML-DSA vs SLH-DSA</h2>
@@ -102,7 +95,7 @@ export function renderCompare(container: HTMLElement): void {
   renderBars('pk-bars', SCHEMES.map((s) => ({ label: s.name, value: s.publicKey, cssClass: s.cssClass })));
   renderBars('sig-bars', SCHEMES.map((s) => ({ label: s.name, value: s.signature, cssClass: s.cssClass })));
 
-  document.getElementById('btn-benchmark')!.addEventListener('click', runBenchmark);
+  bindBenchmarkPanel();
 }
 
 function renderBars(
@@ -136,69 +129,4 @@ function renderBars(
     row.querySelector<HTMLElement>('.bar-fill')!.style.width = `${pct}%`;
     container.appendChild(row);
   });
-}
-
-async function runBenchmark(): Promise<void> {
-  const btn = document.getElementById('btn-benchmark') as HTMLButtonElement;
-  const output = document.getElementById('bench-output')!;
-  btn.disabled = true;
-
-  const iterations = 50;
-  const variants: MLDSAVariant[] = ['ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87'];
-  const msg = new TextEncoder().encode('Benchmark message for ML-DSA signing speed test');
-  const results: { name: string; opsPerSec: number }[] = [];
-
-  for (const variant of variants) {
-    output.innerHTML = `<span class="spinner"></span> Benchmarking ${variant.toUpperCase()} (${iterations} iterations)…`;
-
-    // Let the UI update
-    await new Promise((r) => setTimeout(r, 50));
-
-    const kp = await generateKeyPair(variant);
-    const start = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      await sign(kp.privateKey, msg, variant);
-    }
-    const elapsed = performance.now() - start;
-    const opsPerSec = (iterations / elapsed) * 1000;
-    results.push({ name: variant.toUpperCase(), opsPerSec });
-  }
-
-  // Ed25519 via Web Crypto API
-  try {
-    output.innerHTML = `<span class="spinner"></span> Benchmarking Ed25519 (Web Crypto)…`;
-    await new Promise((r) => setTimeout(r, 50));
-
-    const edKey = await crypto.subtle.generateKey({ name: 'Ed25519' } as Algorithm, false, ['sign', 'verify']) as CryptoKeyPair;
-    const start = performance.now();
-    for (let i = 0; i < iterations; i++) {
-      await crypto.subtle.sign({ name: 'Ed25519' } as Algorithm, edKey.privateKey, msg);
-    }
-    const elapsed = performance.now() - start;
-    results.push({ name: 'Ed25519', opsPerSec: (iterations / elapsed) * 1000 });
-  } catch {
-    results.push({ name: 'Ed25519', opsPerSec: -1 });
-  }
-
-  let html = '<table class="comparison-table mt-1" tabindex="0"><caption class="sr-only">Signing throughput benchmark results in operations per second.</caption><thead><tr><th scope="col">Scheme</th><th scope="col">ops/sec</th><th scope="col">Relative</th></tr></thead><tbody>';
-  const maxOps = Math.max(...results.filter((r) => r.opsPerSec > 0).map((r) => r.opsPerSec));
-
-  for (const r of results) {
-    const ops = r.opsPerSec > 0 ? r.opsPerSec.toFixed(1) : 'N/A (not supported)';
-    const rel = r.opsPerSec > 0 ? `${(r.opsPerSec / maxOps * 100).toFixed(0)}%` : '—';
-    html += `<tr><th scope="row"><strong>${r.name}</strong></th><td>${ops}</td><td>${rel}</td></tr>`;
-  }
-  html += '</tbody></table>';
-  const ed25519 = results.find((result) => result.name === 'Ed25519');
-  const mldsa = results.filter((result) => result.name.startsWith('ML-DSA') && result.opsPerSec > 0);
-  if (ed25519 && ed25519.opsPerSec > 0 && mldsa.length > 0) {
-    const comparisons = mldsa
-      .map((result) => `${result.name}: ${(ed25519.opsPerSec / result.opsPerSec).toFixed(2)}×`)
-      .join(' · ');
-    html += `<p class="text-sm text-muted"><strong>Measured Ed25519 throughput ratio:</strong> ${comparisons}. Ratios above 1 mean Ed25519 was faster in this run.</p>`;
-  } else {
-    html += '<p class="text-sm text-muted">A measured Ed25519 ratio is unavailable because this browser did not provide Ed25519 signing.</p>';
-  }
-  output.innerHTML = html;
-  btn.disabled = false;
 }
