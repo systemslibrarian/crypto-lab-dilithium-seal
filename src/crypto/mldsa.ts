@@ -79,12 +79,44 @@ export async function sign(
   return { signature, message, variant, signingTimeMs };
 }
 
+/**
+ * FIPS 204 Algorithms 2 and 3, line 1: a context string longer than 255 bytes
+ * is an error, not a signature. The library enforces this too (it throws
+ * `RangeError: context should be 255 bytes or less`); the constant is exported
+ * so callers and tests can name the bound instead of repeating 255.
+ */
+export const MAX_CONTEXT_BYTES = 255;
+
+/**
+ * Verify a signature, returning `false` — never throwing — for any input whose
+ * length is wrong.
+ *
+ * FIPS 204 §3.6.2 ("Public-Key and Signature Length Checks"): *"If an
+ * implementation of ML-DSA can accept inputs for σ or pk of any other length,
+ * it shall return false whenever the lengths of either of these inputs differ
+ * from their lengths specified in this standard. Failing to check the length of
+ * pk or σ may interfere with the security properties that ML-DSA is designed to
+ * have, like strong unforgeability."*
+ *
+ * @noble/post-quantum satisfies that for the signature — a wrong-length σ
+ * returns `false` — but for the public key it throws a `RangeError` instead of
+ * returning `false`. Both refuse the input, so neither is unsafe, but "throws"
+ * and "returns false" are different contracts and only one of them is what the
+ * standard asks for. The checks below are this wrapper's own, so the behaviour
+ * every caller in this app sees is the one §3.6.2 specifies, whatever the
+ * library does underneath. `src/__tests__/malformed-inputs.test.ts` pins both:
+ * that the wrapper returns false, and that the library underneath throws.
+ */
 export async function verify(
   publicKey: Uint8Array,
   message: Uint8Array,
   signature: Uint8Array,
   variant: MLDSAVariant
 ): Promise<boolean> {
+  const params = ML_DSA_PARAMS[variant];
+  if (publicKey.length !== params.publicKey) return false;
+  if (signature.length !== params.signature) return false;
+
   const impl = VARIANT_MAP[variant];
   // noble argument order: (signature, message, publicKey).
   return impl.verify(signature, message, publicKey);
