@@ -1,0 +1,39 @@
+name: Full ACVP conformance
+
+# Weekly, and on demand. NOT a merge gate, deliberately.
+#
+# The merge gate runs a vendored subset that is committed, digest-checked and
+# needs no network — hermetic, fast, and unable to fail because GitHub was slow.
+# But a subset can only say "the cases we kept pass". This runs all 615 upstream
+# cases at the same pinned commit to answer the other half: whether the cases we
+# dropped would pass too.
+#
+# It needs the network, so it cannot gate a merge: a network failure must never
+# look like a cryptographic one. If it ever disagrees with the subset, that is a
+# real finding — either the subset is hiding something, or an upstream commit
+# that is supposed to be immutable has moved.
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-acvp:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Fetches the complete upstream files at the pinned commit, verifies each
+      # against the SHA-256 in vectors/acvp/manifest.json, and runs every case.
+      - name: All 615 NIST ACVP ML-DSA cases
+        run: npm run conformance:full
