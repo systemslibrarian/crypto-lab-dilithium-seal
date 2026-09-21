@@ -33,7 +33,8 @@ is not a validation.
 | 1.6 | A context string over 255 bytes is an error | FIPS 204 Algorithms 2–3, line 1 | `malformed-inputs.test.ts` — refused in both sign and verify, per parameter set | The UI itself only ever signs with the empty context |
 | 1.7 | A wrong-length σ or pk returns **false**, never throws | FIPS 204 §3.6.2 | `malformed-inputs.test.ts` — every wrong length including other parameter sets'; the library's own throwing behaviour is pinned separately | The wrapper supplies this; `@noble/post-quantum` throws for pk |
 | 1.8 | Pre-hash digests must give ≥ λ bits of collision strength | FIPS 204 §5.4 fn. 6 | `acvp-conformance.test.ts` — compliant pairings must match NIST exactly; **67** non-compliant ones must be refused, every one predicted by the rule | The library's strict reading differs from ACVP's; an application needing weaker pairings needs a different library |
-| 1.9 | Every malformed input fails safe | FIPS 204 §3.6.2 | `malformed-inputs.test.ts` — single flipped **bits** across c̃/z/h, truncation, extension, wrong key, invalid hint encodings, `z` outside γ₁−β, all-zero and all-ones signatures | Coverage is a sample of bit positions, not exhaustive |
+| 1.9 | Every malformed input fails safe | FIPS 204 §3.6.2 | `malformed-inputs.test.ts` (hand-picked cases) **and** `properties.test.ts` (generated: any bit anywhere in the signature, message or public key; any wrong length; arbitrary bytes; arbitrary sealed-document fields) | Sampled, not exhaustive — but drawn from the whole input space rather than from chosen positions, with a fixed seed so a failure is reproducible |
+| 1.10 | The vendored subset hides nothing | NIST ACVP, same pinned commit | `scripts/full-acvp.mjs`, weekly — all **615** upstream cases: 548 matched, 67 refused under §5.4, **0 unexplained** | Scheduled, not a merge gate: it needs the network, and a network failure must not look like a cryptographic one |
 
 ## 2. Browser security boundary
 
@@ -131,4 +132,4 @@ is not a validation.
 5. **No protection against a compromised host page or extension.**
 6. **No identity binding** — by design, stated wherever it could mislead, and now *demonstrated* by a control that forges a package which verifies perfectly.
 7. **A thin performance margin** against the Lighthouse budget on CI hardware.
-8. **Vector coverage is a subset** — 156 of 615 upstream ACVP cases, keeping every test *group* so no mode is dropped, but not every case.
+8. **The merge gate runs a subset** — 156 of 615 upstream ACVP cases, keeping every test *group* so no mode is dropped. A weekly scheduled job runs all 615 against the same pinned commit, so the subset is checked rather than assumed.
