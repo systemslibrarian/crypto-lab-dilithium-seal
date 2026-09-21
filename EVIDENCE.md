@@ -7,11 +7,12 @@ A claim with no test in the third column is not maintained by this project, and
 none appear below. A claim with nothing in the fourth column would be a claim
 with no limits, and none appear below either.
 
-Counts as of this commit: **285 unit tests** in 11 files and **123 browser
-tests** in 9 files, plus two build-time policy gates that fail `npm run build`
-rather than a test — CSP integrity (`build/csp.ts`) and bundle purity
-(`build/purity.ts`) — and two CI scripts that fail the pipeline
-(`check-action-pins.mjs`, `generate-sbom.mjs`).
+Counts as of this commit: **303 unit tests** in 12 files and **137 browser
+tests** in 9 files; two build-time policy gates that fail `npm run build` rather
+than a test — CSP integrity (`build/csp.ts`) and bundle purity
+(`build/purity.ts`); a reproducibility check that builds twice and diffs;
+a post-deploy check against the live site; and a weekly run that breaks each
+guarantee on purpose and requires its gate to fail (§10).
 
 **Scope note, up front:** this project is **not** NIST-validated, **not**
 CMVP-validated and **not** FIPS-certified, and a browser test asserts it never
