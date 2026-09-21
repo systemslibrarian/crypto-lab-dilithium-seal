@@ -19,6 +19,88 @@ The "How It Works" tab now opens with a plain-language "prove you know a secret 
 
 The demo lets you generate keys, sign and verify messages, seal documents, and compare ML-DSA against classical and other PQ signature schemes. You can interact with parameter-set controls (ML-DSA-44, ML-DSA-65, ML-DSA-87), message/document inputs, and a benchmark runner that executes fixed signing iterations. It also includes educational tabs explaining the construction and where ML-DSA fits in the NIST PQC trio.
 
+## FIPS 204 Conformance Evidence
+
+The signing and verification path is checked against **NIST's own ACVP vectors**
+for all three final parameter sets — ML-DSA-44, ML-DSA-65 and ML-DSA-87 — pinned
+to an immutable upstream:
+
+| | |
+|---|---|
+| Source | [usnistgov/ACVP-Server](https://github.com/usnistgov/ACVP-Server) |
+| Release | `v1.1.0.43` |
+| Commit | `975de31eb83d87039ec88934fdc47d8c312b892d` |
+| Integrity | SHA-256 per upstream file **and** per vendored subset, in `vectors/acvp/manifest.json` |
+
+**CI downloads nothing.** The vendored files are digest-checked against the
+manifest before a single vector is used, so editing the test data fails as
+loudly as a broken implementation. See `vectors/acvp/SOURCE.md` for the
+deterministic subset rule (every upstream *test group* is retained; only
+repetitions within a group are dropped).
+
+### Modes covered
+
+| | ML-DSA-44 | ML-DSA-65 | ML-DSA-87 |
+|---|---|---|---|
+| KeyGen (seed → pk, sk, and pk re-derived from sk) | ✓ | ✓ | ✓ |
+| Sign — deterministic | ✓ | ✓ | ✓ |
+| Sign — hedged (with NIST's `rnd`) | ✓ | ✓ | ✓ |
+| Sign/Verify — external interface, pure | ✓ | ✓ | ✓ |
+| Sign/Verify — external interface, pre-hash (HashML-DSA) | ✓ | ✓ | ✓ |
+| Sign/Verify — internal interface | ✓ | ✓ | ✓ |
+| Sign/Verify — internal interface, external µ | ✓ | ✓ | ✓ |
+| Context strings | ✓ | ✓ | ✓ |
+
+### One real divergence, tested in both directions
+
+FIPS 204 §5.4 (footnote 6) requires a pre-hash digest to give at least λ bits of
+collision strength — at least 2λ bits of digest. ACVP *also* generates pairings
+below that bound (ML-DSA-87 with SHA2-224, say), because Algorithm 4 "may be
+used with other hash functions or XOFs". `@noble/post-quantum` takes the strict
+reading and **refuses** them.
+
+Both halves are asserted: a pairing that meets the bound must reproduce NIST's
+answer byte-for-byte; one that does not must be refused rather than silently
+signed. 67 of the upstream pre-hash cases fall in the second category, and every
+one of them is exactly predicted by the §5.4 rule — there are no unexplained
+mismatches.
+
+### Negative tests
+
+`src/__tests__/malformed-inputs.test.ts`, for every parameter set:
+
+- a single flipped **bit** at sampled positions across c̃, z and h
+- truncated signatures (0, 1, half, n−1 bytes) and extended ones (+1, +8, +64)
+- a different public key of the correct length
+- a modified message, down to one bit; plus appended, truncated and empty
+- malformed public-key **lengths**, including another parameter set's
+- malformed signature **lengths**, including another parameter set's
+- invalid hint encodings: the region saturated, and a cumulative count above ω
+- a `z` driven outside the γ₁ − β norm bound
+- all-zero and all-ones signatures of exactly the right length
+- context strings over the 255-byte limit, in both sign and verify
+- context binding: a signature made under a context must not verify without it
+- library-specific: non-byte-array inputs, a misspelled option key, a
+  wrong-length secret key
+
+**FIPS 204 §3.6.2** says an implementation "shall return false whenever the
+lengths" of σ or pk differ from the standard's. `@noble/post-quantum` does that
+for σ but *throws* a `RangeError` for pk. Neither is unsafe — both refuse — but
+only one is the contract the standard asks for, so `src/crypto/mldsa.ts` carries
+its own length checks and the wrapper returns `false` for both. The library's
+throwing behaviour is pinned by a test too, so a future change is noticed rather
+than silently making the wrapper redundant.
+
+### What this proves, and what it does not
+
+Reproducing NIST's published answers byte-for-byte is evidence of
+**interoperability**. It is **not** a validation: not a CMVP certificate, not a
+FIPS 140 validation, not an independent security audit, and not evidence of
+constant-time behaviour. A validated module is one tested by an accredited
+laboratory under a defined operational environment; a passing vector file says
+only that the arithmetic agrees. This project does not describe itself as
+NIST-validated, CMVP-validated or FIPS-certified, and must not.
+
 ## Browser Security Boundary
 
 The page ships a restrictive Content-Security-Policy:

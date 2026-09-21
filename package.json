@@ -13,6 +13,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "audit:ci": "npm audit --audit-level=moderate",
+    "vectors:check": "node scripts/fetch-acvp-vectors.mjs",
+    "vectors:update": "node scripts/fetch-acvp-vectors.mjs --write",
     "test:a11y": "playwright test",
     "deploy": "npm run build && gh-pages -d dist"
   },
