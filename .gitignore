@@ -5,3 +5,4 @@ dist/
 /.pw-browsers/
 /sbom.cdx.json
 /lighthouse-report/
+/.vitest/

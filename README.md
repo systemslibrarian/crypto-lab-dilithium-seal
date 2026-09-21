@@ -83,6 +83,7 @@ appear.
 | [THREAT-MODEL.md](THREAT-MODEL.md) | Assets, trust boundary, and eight named threats with what is done about each and where it stops |
 | [KNOWN-LIMITATIONS.md](KNOWN-LIMITATIONS.md) | Sixteen limitations in full, including the ones that cannot be fixed in a browser page |
 | [.github/CODEOWNERS](.github/CODEOWNERS) | Review required on the crypto path, the claim data, the build gates and the supply chain |
+| [EVIDENCE.md](EVIDENCE.md) | Every claim, its primary source, the automated test that keeps it true, and what it still does not prove |
 
 All four are linked from the About tab, and a browser test asserts those links
 render and point at this repository.

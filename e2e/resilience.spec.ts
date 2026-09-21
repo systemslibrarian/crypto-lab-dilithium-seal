@@ -347,6 +347,7 @@ test.describe('discoverability of the assurance material', () => {
     expect(hrefs.some((h) => h.endsWith('/THREAT-MODEL.md'))).toBe(true);
     expect(hrefs.some((h) => h.endsWith('/KNOWN-LIMITATIONS.md'))).toBe(true);
     expect(hrefs.some((h) => h.includes('vectors/acvp/SOURCE.md'))).toBe(true);
+    expect(hrefs.some((h) => h.endsWith('/EVIDENCE.md'))).toBe(true);
     for (const link of await links.all()) {
       await expect(link).toHaveAttribute('rel', /noopener/);
       expect((await link.innerText()).trim().length).toBeGreaterThan(3);
