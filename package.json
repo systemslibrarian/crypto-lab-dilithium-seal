@@ -17,6 +17,8 @@
     "conformance:full": "node scripts/full-acvp.mjs",
     "check:action-pins": "node scripts/check-action-pins.mjs",
     "sbom": "node scripts/generate-sbom.mjs",
+    "hash:dist": "node scripts/hash-dist.mjs",
+    "verify:deployment": "node scripts/verify-deployment.mjs",
     "lighthouse": "node scripts/lighthouse.mjs",
     "vectors:update": "node scripts/fetch-acvp-vectors.mjs --write",
     "test:a11y": "playwright test",

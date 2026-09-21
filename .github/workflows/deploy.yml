@@ -61,6 +61,12 @@ jobs:
 
   build:
     runs-on: ubuntu-24.04
+    # `attestations`/`id-token` are for the SLSA provenance step below; the
+    # top-level grant is read-only, so this is the narrowest place to add them.
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -89,6 +95,51 @@ jobs:
 
       - name: Accessibility gate (axe-core, WCAG A/AA)
         run: npm run test:a11y
+
+      # Build a SECOND time from a clean tree and require byte-identical output.
+      #
+      # It is reproducible today, and reproducibility is exactly the kind of
+      # property that is lost by accident — a timestamp, a hash-map iteration
+      # order, a bundler's parallelism — and noticed years later. Without it
+      # nobody, including the maintainer, can check what Pages is serving
+      # against what was committed.
+      - name: The build is reproducible
+        run: |
+          node scripts/hash-dist.mjs > /tmp/first.sha256
+          rm -rf dist
+          npm run build
+          node scripts/hash-dist.mjs > /tmp/second.sha256
+          if ! diff -u /tmp/first.sha256 /tmp/second.sha256; then
+            echo "::error::two clean builds of the same commit produced different bytes"
+            exit 1
+          fi
+          echo "Two clean builds are byte-identical:"
+          cat /tmp/second.sha256
+          cp /tmp/second.sha256 dist-sha256.txt
+
+      - name: Publish the build manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist-sha256
+          path: dist-sha256.txt
+          if-no-files-found: error
+
+      # SLSA build provenance, signed by GitHub's OIDC identity and verifiable
+      # with `gh attestation verify`. It ties these exact bytes to this exact
+      # workflow run on this exact commit — which, together with the
+      # reproducibility check above, is what lets someone else rebuild and
+      # compare rather than take the published bundle on trust.
+      #
+      # Only on a real push to main: a pull-request run has no business minting
+      # an attestation for something that is not going to be published.
+      - name: Attest build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: 'dist/**/*'
+
+      - name: Remove the manifest before packaging
+        run: rm -f dist-sha256.txt
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
@@ -147,9 +198,38 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # The only check that looks at what visitors actually load. Everything above
+  # tests a build; a publish can still partially succeed, serve a stale asset
+  # from a CDN, or upload from the wrong directory — each of which leaves the
+  # whole suite green and the site broken.
+  verify-deployment:
+    if: github.event_name != 'pull_request'
+    needs: deploy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+
+      # Hashes every asset the live page references against a fresh build of
+      # this commit — which only means anything because the build is
+      # reproducible, enforced above — and then drives a real keygen, sign,
+      # verify and tamper-rejection in a browser against the deployed bytes.
+      - name: The deployed site is this build, and it works
+        run: npm run verify:deployment -- "${{ needs.deploy.outputs.page_url || 'https://systemslibrarian.github.io/crypto-lab-dilithium-seal/' }}"
 
   # Dependabot only. Runs after EVERY gate above, so a bump can only merge itself
   # if the vulnerability audit and action-pin check passed, this lab's own unit

@@ -50,15 +50,24 @@ describe('vulnerability gate', () => {
   });
 
   it('blocks deployment and Dependabot self-merge on the audit job', () => {
-    // Both are `needs: [audit, build]`. If either lost `audit`, a vulnerable
-    // tree could still ship or still merge itself, and every other test here
-    // would stay green.
-    const needs = Array.from(workflow.matchAll(/^ {4}needs: (.+)$/gm)).map((m) => m[1].trim());
-    expect(needs.length).toBe(2);
-    for (const n of needs) {
-      expect(n).toContain('audit');
-      expect(n).toContain('build');
+    // The two jobs that can PUBLISH or MERGE must both wait on audit. If either
+    // lost it, a vulnerable tree could still ship or still merge itself, and
+    // every other test here would stay green.
+    //
+    // Asserted by job name rather than by counting `needs:` lines: the count
+    // broke the moment a post-deploy verifier was added, which was a true
+    // change with no bearing on what this test is about.
+    for (const job of ['deploy', 'dependabot-auto-merge']) {
+      const block = workflow.slice(workflow.indexOf(`  ${job}:`));
+      const needs = block.match(/^ {4}needs: (.+)$/m)?.[1] ?? '';
+      expect(needs, `${job} needs:`).toContain('audit');
+      expect(needs, `${job} needs:`).toContain('build');
     }
+  });
+
+  it('runs the deployment verifier only after a publish has happened', () => {
+    const block = workflow.slice(workflow.indexOf('  verify-deployment:'));
+    expect(block.match(/^ {4}needs: (.+)$/m)?.[1]).toContain('deploy');
   });
 
   it('keeps the full test/build/browser suite in the job Dependabot must pass', () => {

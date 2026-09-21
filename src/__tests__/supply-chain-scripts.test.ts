@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { checkWorkflowText, findWorkflowFiles } from '../../scripts/check-action-pins.mjs';
 import { buildSbom, integrityToHash, purlFor } from '../../scripts/generate-sbom.mjs';
+import { manifestFor } from '../../scripts/hash-dist.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const read = (p: string): string => readFileSync(join(ROOT, p), 'utf8');
@@ -243,5 +244,56 @@ describe('Node version and runner family are exact', () => {
       expect(runner, 'runner image').toBe('ubuntu-24.04');
       expect(runner).not.toContain('latest');
     }
+  });
+});
+
+describe('build reproducibility and deployment verification', () => {
+  it('hashes dist deterministically, sorted, with no timestamps', () => {
+    const manifest = manifestFor(join(ROOT, 'dist'));
+    const lines = manifest.split('\n');
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) {
+      expect(line).toMatch(/^[0-9a-f]{64} {2}\S+$/);
+    }
+    // Sorted, so two identical builds produce identical manifests regardless
+    // of the order the filesystem happened to hand the files back.
+    expect([...lines].sort()).toEqual(lines);
+    // Byte-for-byte stable across calls.
+    expect(manifestFor(join(ROOT, 'dist'))).toBe(manifest);
+  });
+
+  it('uses forward slashes, so a Windows manifest matches a Linux one', () => {
+    expect(manifestFor(join(ROOT, 'dist'))).not.toMatch(/\\/);
+  });
+
+  it('CI builds twice and requires the bytes to match', () => {
+    const workflow = read('.github/workflows/deploy.yml');
+    expect(workflow).toContain('The build is reproducible');
+    expect(workflow).toMatch(/hash-dist\.mjs > \/tmp\/first\.sha256/);
+    expect(workflow).toMatch(/hash-dist\.mjs > \/tmp\/second\.sha256/);
+    expect(workflow).toMatch(/diff -u \/tmp\/first\.sha256 \/tmp\/second\.sha256/);
+  });
+
+  it('attests build provenance, and only for something that will be published', () => {
+    const workflow = read('.github/workflows/deploy.yml');
+    expect(workflow).toContain('actions/attest-build-provenance@');
+    // A pull-request run has no business minting an attestation for bytes that
+    // are not going to be published.
+    const attestBlock = workflow.slice(
+      workflow.indexOf('Attest build provenance') - 200,
+      workflow.indexOf('actions/attest-build-provenance@')
+    );
+    expect(attestBlock).toContain("if: github.event_name != 'pull_request'");
+    expect(workflow).toContain('attestations: write');
+  });
+
+  it('verifies the deployment after publishing, not before', () => {
+    const workflow = read('.github/workflows/deploy.yml');
+    const job = workflow.slice(workflow.indexOf('  verify-deployment:'));
+    expect(job).toContain('needs: deploy');
+    expect(job).toContain('npm run verify:deployment');
+    // It must run against the URL deploy actually published.
+    expect(job).toContain('needs.deploy.outputs.page_url');
+    expect(workflow).toContain('page_url: ${{ steps.deployment.outputs.page_url }}');
   });
 });
