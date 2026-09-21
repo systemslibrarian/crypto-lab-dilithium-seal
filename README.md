@@ -19,6 +19,66 @@ The "How It Works" tab now opens with a plain-language "prove you know a secret 
 
 The demo lets you generate keys, sign and verify messages, seal documents, and compare ML-DSA against classical and other PQ signature schemes. You can interact with parameter-set controls (ML-DSA-44, ML-DSA-65, ML-DSA-87), message/document inputs, and a benchmark runner that executes fixed signing iterations. It also includes educational tabs explaining the construction and where ML-DSA fits in the NIST PQC trio.
 
+## Browser Security Boundary
+
+The page ships a restrictive Content-Security-Policy:
+
+```
+default-src 'none';
+script-src  'self' 'sha256-…' 'sha256-…';
+style-src   'self' 'sha256-…';
+img-src     'self' data:;
+base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'
+```
+
+`default-src 'none'` denies every fetch type not named. There is deliberately no
+`connect-src`, `worker-src`, `frame-src`, `media-src` or `font-src`: each falls
+through to the deny-all default, because this demo makes **no network request
+after load** — no analytics, no telemetry, no CDN, no remote font. The two inline
+`<script>` blocks and the one inline `<style>` block are allowed by SHA-256 hash,
+computed at build time from the *emitted* bytes (`build/csp.ts`), so the policy
+cannot drift from the markup. No `'unsafe-inline'`, `'unsafe-eval'` or
+`'unsafe-hashes'` appears anywhere in it, and the build fails if one is added.
+
+### What a meta-delivered CSP cannot do
+
+GitHub Pages serves this site with a fixed set of response headers and offers no
+way to add one, so the policy is delivered in a `<meta http-equiv>` element. That
+is **strictly weaker** than an HTTP response header, in four specific ways:
+
+1. **`frame-ancestors` is ignored.** Per CSP Level 3, a meta-delivered policy
+   silently drops it — so this page cannot prevent being framed by another site,
+   and a header-based `X-Frame-Options` is equally unavailable. The directive is
+   written anyway, so that it starts working the day this is served from
+   somewhere that can set headers. Chromium logs a console notice about it; the
+   e2e gate asserts that notice appears, so the limitation cannot quietly lapse.
+2. **`report-uri` / `report-to` are ignored.** There is no violation telemetry,
+   by construction as well as by limitation — see the no-analytics rule above.
+3. **`sandbox` is ignored.**
+4. **The policy only applies from the point the parser reaches it.** Anything
+   earlier in `<head>` is unprotected. The meta is placed immediately after
+   `<title>`, ahead of every script and stylesheet on the page.
+
+A fifth limit is not about meta delivery at all: the UI is built with
+`innerHTML`, so `require-trusted-types-for 'script'` cannot be enforced without
+rewriting the rendering layer. That is a real residual risk, not a formality —
+the policy stops injected content from *loading code*, but it does not stop
+injected markup from being written into the page in the first place.
+
+### Tests
+
+- `e2e/csp.spec.ts` asserts the exact directive list, that no unsafe token or
+  remote origin appears, that there is exactly one hash per inline block, and —
+  the part that distinguishes *shipped* from *working* — that an injected remote
+  script and an injected inline script are both refused by the browser.
+- The same spec drives all five tabs, every parameter set, the benchmark, both
+  visualizations and the seal export while **aborting** any off-origin request,
+  and fails if one is attempted.
+- `src/__tests__/csp-build.test.ts` covers the build gate: unfilled placeholder,
+  unsafe token, missing hardening directive, an inline block no hash covers, a
+  stale hash for a deleted block, and a remote origin in the policy all fail the
+  build.
+
 ## What Can Go Wrong
 
 - **Variable-time signing leaks timing.** ML-DSA uses a rejection-sampling loop, so signing time varies; without hardening this can be a side-channel in adversarial environments.

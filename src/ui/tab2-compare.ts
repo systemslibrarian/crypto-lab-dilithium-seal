@@ -76,15 +76,15 @@ export function renderCompare(container: HTMLElement): void {
     <div class="card">
       <h2>When to Use ML-DSA vs SLH-DSA</h2>
       <div class="info-grid">
-        <div class="info-item" style="text-align:left">
+        <div class="info-item info-item-left">
           <div class="label">ML-DSA (FIPS 204)</div>
           <p class="text-sm text-muted mt-1">Faster signing and verification, moderate signature size. Best for TLS certificates, code signing, real-time protocols.</p>
         </div>
-        <div class="info-item" style="text-align:left">
+        <div class="info-item info-item-left">
           <div class="label">SLH-DSA (FIPS 205)</div>
           <p class="text-sm text-muted mt-1">Slower, larger signatures, hash-only assumption. Best for long-lived archives, maximum conservatism.</p>
         </div>
-        <div class="info-item" style="text-align:left">
+        <div class="info-item info-item-left">
           <div class="label">Use Both</div>
           <p class="text-sm text-muted mt-1">Sign with ML-DSA for performance, archive with SLH-DSA for longevity. Defense-in-depth against future cryptanalysis.</p>
         </div>
@@ -117,10 +117,16 @@ function renderBars(
     row.innerHTML = `
       <span class="bar-label" aria-hidden="true">${d.label}</span>
       <div class="bar-track" aria-hidden="true">
-        <div class="bar-fill ${d.cssClass}" style="width: ${pct}%"></div>
+        <div class="bar-fill ${d.cssClass}"></div>
       </div>
       <span class="bar-value" aria-hidden="true">${d.value.toLocaleString()} B</span>
     `;
+    // The width is data, not style, so it cannot live in the stylesheet — and it
+    // must not be a `style="width: …"` attribute either, because the CSP would
+    // then need `style-src 'unsafe-inline'`. CSP governs inline style ATTRIBUTES
+    // parsed from markup, not CSSOM writes, so setting the property here is both
+    // policy-clean and the same pixels.
+    row.querySelector<HTMLElement>('.bar-fill')!.style.width = `${pct}%`;
     container.appendChild(row);
   });
 }
