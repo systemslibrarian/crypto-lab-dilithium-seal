@@ -342,6 +342,7 @@ test.describe('discoverability of the assurance material', () => {
     await page.goto('.');
     await page.locator('#tab-btn-about').click();
     const links = page.locator('#assurance-links a');
+    await expect(links.first()).toBeVisible();
     const hrefs = await links.evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href));
     expect(hrefs.some((h) => h.endsWith('/SECURITY.md'))).toBe(true);
     expect(hrefs.some((h) => h.endsWith('/THREAT-MODEL.md'))).toBe(true);
@@ -379,6 +380,7 @@ test.describe('discoverability of the assurance material', () => {
   test('every assurance link would resolve on the published repository', async ({ page }) => {
     await page.goto('.');
     await page.locator('#tab-btn-about').click();
+    await expect(page.locator('#assurance-links a').first()).toBeVisible();
     const hrefs = await page
       .locator('#assurance-links a')
       .evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href));
@@ -450,5 +452,66 @@ test.describe('the selection is one value, shared by the whole demo', () => {
     for (const line of csv.trim().split('\n').slice(1)) {
       expect(line).toContain('ML-DSA-44');
     }
+  });
+});
+
+test.describe('panels load on demand without breaking', () => {
+  test('the landing tab needs no second request', async ({ page }) => {
+    const chunks: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('/assets/') && r.url().endsWith('.js')) chunks.push(r.url());
+    });
+    await page.goto('.');
+    // Tab 1 is statically imported precisely so first paint does not wait on a
+    // second round trip: exactly one JS request before anything is clicked.
+    await expect(page.locator('#btn-keygen')).toBeEnabled();
+    expect(chunks).toHaveLength(1);
+  });
+
+  test('each other tab fetches its own chunk, once', async ({ page }) => {
+    const chunks: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('/assets/') && r.url().endsWith('.js')) chunks.push(r.url());
+    });
+    await page.goto('.');
+    await expect(page.locator('#btn-keygen')).toBeEnabled();
+
+    await page.locator('#tab-btn-compare').click();
+    await expect(page.locator('#benchmark-panel')).toBeVisible();
+    const afterFirstVisit = chunks.length;
+    expect(afterFirstVisit).toBeGreaterThan(1);
+
+    // Going away and back must not re-fetch: the module is already evaluated.
+    await page.locator('#tab-btn-about').click();
+    await expect(page.locator('#standards-status')).toBeVisible();
+    await page.locator('#tab-btn-compare').click();
+    await expect(page.locator('#benchmark-panel')).toBeVisible();
+    const revisit = chunks.filter((u) => u.includes('tab2-compare')).length;
+    expect(revisit).toBe(1);
+  });
+
+  test('a chunk that fails to load says so instead of showing an empty tab', async ({ page }) => {
+    await page.goto('.');
+    await expect(page.locator('#btn-keygen')).toBeEnabled();
+    // Break exactly the About chunk. Silence here would look identical to a
+    // tab that simply has nothing in it.
+    await page.route('**/assets/tab5-about-*.js', (route) => route.abort());
+    await page.locator('#tab-btn-about').click();
+    await expect(page.locator('#tab-content')).toContainText('could not be loaded');
+    // And the crypto that was already loaded still works.
+    await page.locator('#tab-btn-sign-verify').click();
+    await page.locator('#btn-keygen').click();
+    await expect(page.locator('#keygen-output')).toContainText('Public key');
+  });
+
+  test('switching quickly lands on the tab that was clicked last', async ({ page }) => {
+    await page.goto('.');
+    await expect(page.locator('#btn-keygen')).toBeEnabled();
+    // Two chunks in flight at once; the slower one must not win.
+    await page.locator('#tab-btn-compare').click();
+    await page.locator('#tab-btn-pqc-trio').click();
+    await expect(page.locator('#tab-btn-pqc-trio')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#tab-content')).toContainText('Post-Quantum Cryptography Trio');
+    await expect(page.locator('#benchmark-panel')).toHaveCount(0);
   });
 });

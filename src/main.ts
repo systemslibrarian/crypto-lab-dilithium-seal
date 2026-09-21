@@ -9,19 +9,30 @@
 
 import './style.css';
 import { initTabs, type Tab } from './ui/tabs';
+// Static: this is the landing tab, so first paint must not wait on a second
+// round trip. The other four are dynamic — see their `load` thunks below.
 import { renderSignVerify } from './ui/tab1-sign-verify';
-import { renderCompare } from './ui/tab2-compare';
-import { renderHowItWorks } from './ui/tab3-how-it-works';
-import { renderPQCTrio } from './ui/tab4-pqc-trio';
-import { renderAbout } from './ui/tab5-about';
 import { renderStandardsStrip } from './ui/provenance';
 
+/**
+ * Four of these five panels are code no first-time visitor executes: the
+ * comparison charts, the walkthrough with its two visualizations and its
+ * timing measurement, the standards trio, and the About tab with the parameter
+ * table, provenance panel and implementation identity. Loading them eagerly
+ * made every visitor download and parse all of it before seeing anything.
+ *
+ * The landing tab stays static so first paint never waits on a second request.
+ */
 const tabs: Tab[] = [
-  { id: 'sign-verify', label: 'Sign & Verify', render: renderSignVerify },
-  { id: 'compare', label: 'Compare', render: renderCompare },
-  { id: 'how-it-works', label: 'How It Works', render: renderHowItWorks },
-  { id: 'pqc-trio', label: 'PQC Trio', render: renderPQCTrio },
-  { id: 'about', label: 'About', render: renderAbout },
+  { id: 'sign-verify', label: 'Sign & Verify', load: async () => renderSignVerify },
+  { id: 'compare', label: 'Compare', load: () => import('./ui/tab2-compare').then((m) => m.renderCompare) },
+  {
+    id: 'how-it-works',
+    label: 'How It Works',
+    load: () => import('./ui/tab3-how-it-works').then((m) => m.renderHowItWorks),
+  },
+  { id: 'pqc-trio', label: 'PQC Trio', load: () => import('./ui/tab4-pqc-trio').then((m) => m.renderPQCTrio) },
+  { id: 'about', label: 'About', load: () => import('./ui/tab5-about').then((m) => m.renderAbout) },
 ];
 
 function applyTheme(theme: 'dark' | 'light'): void {
