@@ -8,6 +8,35 @@
     <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f6f8fa" media="(prefers-color-scheme: light)" />
     <title>dilithium-seal — ML-DSA (CRYSTALS-Dilithium) | NIST FIPS 204</title>
+    <!--
+      Content-Security-Policy. See build/csp.ts for why this is a <meta> rather
+      than a response header, what that costs, and why the sha256 values are
+      substituted at build time instead of written by hand.
+
+      default-src 'none' denies every fetch type not named below, which is all of
+      them except the three this page genuinely makes:
+        script-src  the one bundled ES module, plus the two inline script
+                    blocks in this file, each by SHA-256 hash.
+        style-src   the one bundled stylesheet, plus the inline style block
+                    further down this file, by SHA-256 hash.
+        img-src     'self' is unused today; data: is the inline SVG favicon.
+      Nothing else is granted. There is no connect-src, so fetch/XHR/WebSocket/
+      EventSource are all denied: this demo makes no network request after load
+      and has no analytics, no telemetry, no CDN and no remote font. There is no
+      worker-src, no frame-src, no media-src and no manifest-src, for the same
+      reason — each falls through to default-src 'none'.
+
+      The last four directives are hardening rather than permission:
+        base-uri 'none'        an injected base element cannot re-point every
+                               relative URL on the page.
+        object-src 'none'      no object/embed plugin content.
+        frame-ancestors 'none' IGNORED in meta — kept deliberately; see build/csp.ts.
+        form-action 'none'     this page has no form; an injected one cannot post.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' {{CSP_SCRIPT_HASHES}}; style-src 'self' {{CSP_STYLE_HASHES}}; img-src 'self' data:; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
+    />
     <script>
       // Dark is the only theme. Pin it before first paint, and overwrite any
       // 'light' a visitor stored back when the header carried a theme toggle.
@@ -160,9 +189,8 @@
       <nav id="tabs" role="tablist" aria-label="Demo sections"></nav>
       <main id="tab-content" role="tabpanel" tabindex="0"></main>
     </div>
-    <!-- No opacity here: dimming the muted text color drops it below WCAG AA contrast. -->
-    <footer style="text-align:center; padding: 1.5rem; font-size: 0.85rem; color: var(--text-muted); margin-top: 2rem;">
-      <div style="margin-bottom: 0.75rem;">
+    <footer class="site-footer">
+      <div class="site-footer-links">
         Related demos:
         <a href="https://systemslibrarian.github.io/crypto-lab-dilithium-reject/" target="_blank" rel="noopener">crypto-lab-dilithium-reject</a>
         · <a href="https://systemslibrarian.github.io/crypto-lab-falcon-seal/" target="_blank" rel="noopener">crypto-lab-falcon-seal</a>

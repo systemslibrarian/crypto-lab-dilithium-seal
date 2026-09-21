@@ -50,15 +50,15 @@ export function renderPQCTrio(container: HTMLElement): void {
     <div class="card">
       <h2>Where These Standards Are Deployed</h2>
       <div class="info-grid">
-        <div class="info-item" style="text-align:left">
+        <div class="info-item info-item-left">
           <div class="label">ML-KEM (FIPS 203)</div>
           <p class="text-sm text-muted mt-1">Chrome TLS 1.3, Cloudflare, AWS KMS, Signal Protocol (PQXDH).</p>
         </div>
-        <div class="info-item" style="text-align:left">
+        <div class="info-item info-item-left">
           <div class="label">ML-DSA (FIPS 204)</div>
           <p class="text-sm text-muted mt-1">NIST recommended for code signing. Certificate authorities beginning PQ transition.</p>
         </div>
-        <div class="info-item" style="text-align:left">
+        <div class="info-item info-item-left">
           <div class="label">SLH-DSA (FIPS 205)</div>
           <p class="text-sm text-muted mt-1">Recommended for long-lived signatures and document archives. Conservative alternative to ML-DSA.</p>
         </div>

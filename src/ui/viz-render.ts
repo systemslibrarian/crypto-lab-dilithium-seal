@@ -24,16 +24,34 @@ function coeffBars(
       const over = bound !== undefined && Math.abs(v) >= bound;
       const cls = over ? 'coeff-bar over' : accent ? `coeff-bar ${accent}` : 'coeff-bar';
       const up = v >= 0;
+      // `data-coeff-height` rather than `style="height:…"`: the height is a
+      // measured value and has to be inline, but an inline style ATTRIBUTE would
+      // force the CSP to `style-src 'unsafe-inline'`. `applyCoeffHeights` writes
+      // it through the CSSOM once the markup is in the document, which CSP does
+      // not govern. Every caller that inserts these bars must call it — the
+      // bars render at zero height otherwise, which the e2e gate catches.
       return `
         <div class="coeff-col" role="img" aria-label="coefficient ${v}">
-          <div class="coeff-half top">${up ? `<span class="${cls}" style="height:${h}%"></span>` : ''}</div>
+          <div class="coeff-half top">${up ? `<span class="${cls}" data-coeff-height="${h}"></span>` : ''}</div>
           <div class="coeff-axis"></div>
-          <div class="coeff-half bot">${!up ? `<span class="${cls}" style="height:${h}%"></span>` : ''}</div>
+          <div class="coeff-half bot">${!up ? `<span class="${cls}" data-coeff-height="${h}"></span>` : ''}</div>
           <div class="coeff-val">${v}</div>
         </div>`;
     })
     .join('');
   return `<div class="coeff-plot">${bars}</div>`;
+}
+
+/**
+ * Write the heights the coefficient bars were rendered with.
+ *
+ * Called on the subtree immediately after it is inserted. See `coeffBars` for
+ * why the value travels as a data attribute instead of an inline style.
+ */
+function applyCoeffHeights(root: ParentNode): void {
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>('[data-coeff-height]'))) {
+    el.style.height = `${el.dataset.coeffHeight}%`;
+  }
 }
 
 function attemptCard(a: SignAttempt, idx: number): string {
@@ -119,7 +137,9 @@ export function renderFiatShamir(host: HTMLElement): void {
       }
       list.insertAdjacentHTML('beforeend', attemptCard(run.attempts[i], i));
       const cards = list.querySelectorAll('.fs-attempt');
-      cards[cards.length - 1]?.scrollIntoView({ block: 'nearest' });
+      const card = cards[cards.length - 1];
+      if (card) applyCoeffHeights(card);
+      card?.scrollIntoView({ block: 'nearest' });
       if (reduce) reveal(i + 1);
       else setTimeout(() => reveal(i + 1), 650);
     };

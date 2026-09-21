@@ -61,7 +61,7 @@ export function renderAbout(container: HTMLElement): void {
 
     <div class="card">
       <h2>References</h2>
-      <ul class="text-sm text-muted" style="list-style: disc; padding-left: 1.5rem; line-height: 2;">
+      <ul class="text-sm text-muted ref-list">
         <li><a href="https://csrc.nist.gov/pubs/fips/204/final" target="_blank" rel="noopener">NIST FIPS 204 — ML-DSA (Module-Lattice-Based Digital Signature Standard)</a></li>
         <li><a href="https://csrc.nist.gov/pubs/fips/203/final" target="_blank" rel="noopener">NIST FIPS 203 — ML-KEM (Module-Lattice-Based Key-Encapsulation Mechanism Standard)</a></li>
         <li><a href="https://csrc.nist.gov/pubs/fips/205/final" target="_blank" rel="noopener">NIST FIPS 205 — SLH-DSA (Stateless Hash-Based Digital Signature Standard)</a></li>
@@ -77,7 +77,7 @@ export function renderAbout(container: HTMLElement): void {
       <p class="text-sm text-muted mt-1">This demo runs fully offline — no external CDN dependencies at runtime.</p>
     </div>
 
-    <div class="card" style="text-align: center;">
+    <div class="card card-centered">
       <p class="text-sm text-muted"><em>"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Corinthians 10:31</em></p>
     </div>
   `;
