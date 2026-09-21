@@ -8,6 +8,8 @@
  */
 
 import { runSign, rerollSecret, FS_PARAMS, type SignAttempt } from './fiat-shamir-viz';
+import { fidelityBadge } from './fidelity';
+import { bySet } from '../data/parameters';
 
 // ── Coefficient bar plot ────────────────────────────────────────────────────
 // A signed row of bars centred on a zero baseline. Values above `bound` (when
@@ -91,10 +93,62 @@ export function signRunSummary(run: { attempts: Pick<SignAttempt, 'accepted'>[] 
   return `This illustrative loop rejected <strong>${rejects}</strong> oversized response${rejects === 1 ? '' : 's'}, then accepted attempt ${run.attempts.length}.`;
 }
 
-export function renderFiatShamir(host: HTMLElement): void {
+/**
+ * Toy parameters beside the real ones, so the gap is a number rather than an
+ * adjective. "Illustrative" means nothing next to q=257 if the reader has never
+ * seen q=8380417.
+ */
+function scaleTable(): string {
   const { N, Q, GAMMA1, BETA, TAU, ETA, REJECT_BOUND } = FS_PARAMS;
+  const real = bySet('ml-dsa-65');
+  const rows: [string, string, string][] = [
+    ['Coefficients per polynomial (n)', String(N), '256'],
+    ['Modulus (q)', String(Q), '8,380,417'],
+    ['Module dimensions (k, ℓ)', '(1, 1) — a single polynomial', `(${real.k}, ${real.l})`],
+    ['Secret bound (η)', String(ETA), String(real.eta)],
+    ['Mask bound (γ₁)', String(GAMMA1), '2¹⁹ = 524,288'],
+    ['Challenge weight (τ)', String(TAU), String(real.tau)],
+    ['β = τ·η', String(BETA), String(real.beta)],
+    ['Rejection bound (γ₁ − β)', String(REJECT_BOUND), (524288 - real.beta).toLocaleString()],
+    ['Challenge c', 'drawn at random', 'derived by hashing μ ‖ w₁ (Fiat-Shamir)'],
+    ['Hint, public key t, verification', 'not modelled', 'all present'],
+  ];
+  return `
+    <table class="comparison-table table-prose fs-scale-table" tabindex="0">
+      <caption class="sr-only">The reduced parameters used by this visualization compared with the real ML-DSA-65 values from FIPS 204.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Parameter</th>
+          <th scope="col">This visualization</th>
+          <th scope="col">Real ML-DSA-65</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            ([label, toy, real2]) =>
+              `<tr><th scope="row">${label}</th><td class="text-yellow">${toy}</td><td>${real2}</td></tr>`
+          )
+          .join('')}
+      </tbody>
+    </table>`;
+}
+
+export function renderFiatShamir(host: HTMLElement): void {
+  const { GAMMA1, BETA, TAU, ETA, REJECT_BOUND } = FS_PARAMS;
   host.innerHTML = `
     <div class="fs-viz">
+      ${fidelityBadge('model', 'fiat-shamir')}
+      <p class="text-sm text-muted">
+        <strong>What this is not:</strong> it is not the signer. The signatures this site produces
+        come from <span class="mono">@noble/post-quantum</span> running full FIPS 204 ML-DSA over a
+        256-coefficient ring modulo 8,380,417. The loop below uses 8 coefficients modulo 257 so
+        every number fits on screen. The rejection rule <span class="mono">‖z‖∞ &lt; γ₁ − β</span>
+        and the equation <span class="mono">z = y + c·s₁</span> are faithful; the scale is not, and
+        the challenge here is drawn at random rather than hashed from the commitment, so this is
+        the interactive proof that Fiat-Shamir makes non-interactive, not Fiat-Shamir itself.
+      </p>
+      ${scaleTable()}
       <p class="text-sm text-muted">
         Press <strong>Run the signing loop</strong> to watch Fiat-Shamir <em>with aborts</em> happen for real.
         Each attempt draws a fresh random mask <strong>y</strong>, adds the secret's contribution
@@ -108,9 +162,8 @@ export function renderFiatShamir(host: HTMLElement): void {
         <span class="fs-stats text-sm" id="fs-stats" aria-live="polite"></span>
       </div>
       <div class="fs-scale text-sm text-muted">
-        Illustrative scale model — real ML-DSA math, shrunk so every coefficient is visible:
-        N=${N} coeffs (real: 256), q=${Q} (real: 8380417), η=${ETA}, γ₁=${GAMMA1}, β=${BETA} (τ=${TAU}),
-        reject bound γ₁−β=${REJECT_BOUND}. The reject rule and the equation z = y + c·s₁ are exact.
+        Reject bound in this model: γ₁−β = ${GAMMA1}−${BETA} = ${REJECT_BOUND} (τ=${TAU}, η=${ETA}).
+        Nothing below is pre-baked: press the button and the loop runs.
       </div>
       <div class="fs-attempts" id="fs-attempts" aria-live="polite"></div>
     </div>`;
@@ -203,10 +256,21 @@ export function renderModuleLWE(host: HTMLElement): void {
 
   host.innerHTML = `
     <div class="mlwe-viz">
+      ${fidelityBadge('model', 'module-lwe')}
       <p class="text-sm text-muted">
-        ML-DSA's public key is <strong>t = A·s + e</strong>: a public matrix <strong>A</strong> times the
-        secret <strong>s</strong>, plus a small <strong>error e</strong>. Drag the slider to change the error
-        and watch the problem flip between trivially solvable and quantum-hard.
+        ML-DSA's public key has the shape <strong>t = A·s₁ + s₂</strong>: a public matrix
+        <strong>A</strong> times the secret, plus a small error. Drag the slider to change the error
+        and watch the problem flip between trivially solvable and hard.
+      </p>
+      <p class="text-sm text-muted">
+        <strong>The numbers below are invented for legibility.</strong> This is a 3×3 integer system
+        modulo <span class="mono">97</span> with a hand-picked secret and a fixed error pattern.
+        Real ML-DSA-65 works over a module of
+        <span class="mono">6×5</span> polynomials, each with 256 coefficients, modulo
+        <span class="mono">8,380,417</span> — about
+        <span class="mono">7,680</span> secret coefficients rather than three. Solving the toy
+        system by hand is easy; that is the point of shrinking it, and it is also why nothing here
+        is evidence about the real problem's hardness.
       </p>
       <div class="mlwe-slider-row">
         <label for="mlwe-err">Error size (‖e‖∞)</label>

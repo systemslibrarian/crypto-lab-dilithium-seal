@@ -1049,3 +1049,62 @@ a:focus-visible {
   color: var(--text);
   margin-bottom: 0.3rem;
 }
+
+/* ── Fidelity labels: real operation / real values / model / concept ────────
+   Each label states its meaning in words. Colour is reinforcement only, never
+   the signal (WCAG 1.4.1) — the icon and the label text carry it. */
+
+.fidelity {
+  display: block;
+  border-left: 3px solid var(--border);
+  background-color: var(--surface2);
+  border-radius: 0 6px 6px 0;
+  padding: 0.5rem 0.7rem;
+  margin: 0 0 0.75rem;
+}
+.fidelity-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.fidelity-meaning {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* --green/--yellow/--red/--blue are already documented above as >=4.5:1 on
+   --surface and --surface2, which is what this small label text needs. */
+.fidelity-operation { border-left-color: var(--green); }
+.fidelity-operation .fidelity-label { color: var(--green); }
+.fidelity-values { border-left-color: var(--blue); }
+.fidelity-values .fidelity-label { color: var(--blue); }
+/* The two that are NOT ML-DSA get the warning tone. */
+.fidelity-model { border-left-color: var(--yellow); }
+.fidelity-model .fidelity-label { color: var(--yellow); }
+.fidelity-concept { border-left-color: var(--text-muted); }
+.fidelity-concept .fidelity-label { color: var(--text-muted); }
+
+.fidelity-chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.fidelity-chip.fidelity-operation { color: var(--green); }
+.fidelity-chip.fidelity-values { color: var(--blue); }
+.fidelity-chip.fidelity-model { color: var(--yellow); }
+.fidelity-chip.fidelity-concept { color: var(--text-muted); }
+
+/* The toy-vs-real comparison inside the reduced models. */
+.fs-scale-table { margin-top: 0.75rem; }
+
+.param-symbol { color: var(--accent); }
+/* Informational rows (challenge entropy, repetitions) are not algorithm
+   parameters; the standard lists them "for informational purposes". */
+.param-informational th[scope='row'] { font-style: italic; }

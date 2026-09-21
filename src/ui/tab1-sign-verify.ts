@@ -16,6 +16,7 @@ import { InsecureRandomnessError } from '../crypto/random';
 import { truncateHex, formatBytes, h, escapeHTML } from './helpers';
 import { cite } from './provenance';
 import { renderImplementationBadge } from './implementation';
+import { fidelityBadge } from './fidelity';
 
 let currentVariant: MLDSAVariant = 'ml-dsa-65';
 let keyPair: MLDSAKeyPair | null = null;
@@ -33,6 +34,7 @@ export function renderSignVerify(container: HTMLElement): void {
   container.innerHTML = `
     <div class="card">
       <h2>ML-DSA Digital Signatures</h2>
+      ${fidelityBadge('operation', 'sign-verify')}
       <p class="text-sm text-muted mb-1">Generate a keypair, sign a message, verify the signature, and test tamper detection. Every operation below is real ML-DSA as specified in FIPS 204 — the sizes shown are the standard's own ${cite('sizes')}.</p>
 
       <div class="section">
@@ -69,6 +71,7 @@ export function renderSignVerify(container: HTMLElement): void {
 
     <div class="card">
       <h2>Seal a Document</h2>
+      ${fidelityBadge('operation', 'seal')}
       <p class="text-sm text-muted mb-1">Sign a complete document and produce a verifiable sealed JSON package.</p>
 
       <div class="section">

@@ -5,6 +5,7 @@
 
 import { generateKeyPair, sign, type MLDSAVariant } from '../crypto/mldsa';
 import { cite } from './provenance';
+import { fidelityBadge } from './fidelity';
 
 interface SchemeInfo {
   name: string;
@@ -29,6 +30,7 @@ export function renderCompare(container: HTMLElement): void {
   container.innerHTML = `
     <div class="card">
       <h2>ML-DSA vs Classical Signatures</h2>
+      ${fidelityBadge('values', 'scheme-comparison')}
       <p class="text-sm text-muted mb-1">Size comparison across classical and post-quantum digital signature schemes. ML-DSA sizes are FIPS 204 Table 2 ${cite('sizes')}; the SLH-DSA row is FIPS 205 and the classical rows are their own standards.</p>
 
       <table class="comparison-table" tabindex="0">
@@ -58,16 +60,19 @@ export function renderCompare(container: HTMLElement): void {
 
     <div class="card">
       <h2>Public Key Size Comparison</h2>
+      ${fidelityBadge('values', 'pk-chart')}
       <div class="bar-chart" id="pk-bars"></div>
     </div>
 
     <div class="card">
       <h2>Signature Size Comparison</h2>
+      ${fidelityBadge('values', 'sig-chart')}
       <div class="bar-chart" id="sig-bars"></div>
     </div>
 
     <div class="card">
       <h2>Signing Speed Benchmark</h2>
+      ${fidelityBadge('values', 'benchmark')}
       <p class="text-sm text-muted mb-1">Measure ML-DSA signing throughput in your browser. Each variant runs 50 sign iterations.</p>
       <button class="btn" id="btn-benchmark">Run Benchmark</button>
       <div id="bench-output" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -76,6 +81,7 @@ export function renderCompare(container: HTMLElement): void {
 
     <div class="card">
       <h2>When to Use ML-DSA vs SLH-DSA</h2>
+      ${fidelityBadge('concept', 'when-to-use')}
       <div class="info-grid">
         <div class="info-item info-item-left">
           <div class="label">ML-DSA (FIPS 204)</div>
