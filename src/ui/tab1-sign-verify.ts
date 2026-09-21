@@ -97,6 +97,7 @@ export function renderSignVerify(container: HTMLElement): void {
           <button class="btn" id="btn-seal" disabled>Seal Document</button>
           <button class="btn btn-secondary" id="btn-export-seal" disabled>Export Seal</button>
           <button class="btn btn-danger" id="btn-tamper-seal" disabled>Tamper &amp; Verify</button>
+          <button class="btn btn-danger" id="btn-forge-seal" disabled>Forge a Verifying Seal</button>
         </div>
         <div id="seal-output" aria-live="polite"></div>
       </div>
@@ -170,7 +171,7 @@ function resetKeyMaterial(): void {
   lastSealedDoc = null;
 
   clearSignatureState();
-  for (const id of ['btn-sign', 'btn-seal', 'btn-export-seal', 'btn-tamper-seal']) {
+  for (const id of ['btn-sign', 'btn-seal', 'btn-export-seal', 'btn-tamper-seal', 'btn-forge-seal']) {
     const btn = document.getElementById(id) as HTMLButtonElement | null;
     if (btn) btn.disabled = true;
   }
@@ -251,6 +252,7 @@ function bindEvents(): void {
   document.getElementById('btn-seal')!.addEventListener('click', handleSeal);
   document.getElementById('btn-export-seal')!.addEventListener('click', handleExportSeal);
   document.getElementById('btn-tamper-seal')!.addEventListener('click', handleTamperSeal);
+  document.getElementById('btn-forge-seal')!.addEventListener('click', handleForgeSeal);
   document.getElementById('btn-verify-seal')!.addEventListener('click', handleVerifySealJSON);
 }
 
@@ -414,6 +416,7 @@ async function handleSeal(): Promise<void> {
 
   (document.getElementById('btn-export-seal') as HTMLButtonElement).disabled = false;
   (document.getElementById('btn-tamper-seal') as HTMLButtonElement).disabled = false;
+  (document.getElementById('btn-forge-seal') as HTMLButtonElement).disabled = false;
 }
 
 function handleExportSeal(): void {
@@ -472,6 +475,95 @@ async function handleTamperSeal(): Promise<void> {
         Signature (ML-DSA): ${signal(both.signatureValid, 'FAILED (proves authenticity)')}
       </p>
       <p class="text-sm text-muted mt-1">Takeaway: the SHA-256 hash is a convenience for a fast local check. <strong>The signature — not the hash — is what proves authenticity</strong>, because forging it requires the secret key.</p>
+    </div>
+  `;
+}
+
+/**
+ * Lesson 3 — the one the page could only assert until now.
+ *
+ * Lessons 1 and 2 show the signature catching an edit. They leave a reader with
+ * the reasonable-sounding and completely wrong conclusion that a document which
+ * verifies is a document that means something.
+ *
+ * It does not. Verification proves that whoever holds the private key matching
+ * THIS public key signed THESE bytes. The sealed package carries the public key
+ * in the same JSON as the signature, so an attacker who replaces the content,
+ * signs it with their OWN key, and replaces the public key too produces a
+ * document where every check passes — hash, signature, everything — and which
+ * proves nothing at all.
+ *
+ * FIPS 204 §3.5: "binding a public key to an identity requires proof of
+ * possession". This button is that sentence, executed. It uses real ML-DSA
+ * throughout: the forged signature is a genuine signature, under a genuine key
+ * that simply is not Alice's.
+ */
+async function handleForgeSeal(): Promise<void> {
+  if (!lastSealedDoc) return;
+  const output = document.getElementById('seal-output')!;
+  const button = document.getElementById('btn-forge-seal') as HTMLButtonElement;
+  button.disabled = true;
+
+  const variant = getSelectedVariant();
+  const forgedContent = lastSealedDoc.content.replace(
+    /\b\w+\b/,
+    'FORGED'
+  );
+
+  let attacker;
+  try {
+    attacker = await generateKeyPair(variant);
+  } catch (err) {
+    if (!renderRandomnessFailure(output, err)) throw err;
+    button.disabled = false;
+    return;
+  }
+
+  // A real seal, made with a real key. Nothing here is faked — that is the
+  // whole point, and it is why the verdict below is a genuine ✓.
+  const forged = await sealDocument(
+    forgedContent,
+    attacker.privateKey,
+    attacker.publicKey,
+    lastSealedDoc.signerLabel,
+    variant
+  );
+  const result = await verifyDocument(forged);
+
+  const originalKey = lastSealedDoc.publicKey;
+  const forgedKey = forged.publicKey;
+
+  output.innerHTML += `
+    <div class="mt-2 tamper-lesson forge-lesson" id="forge-lesson">
+      <div class="text-sm"><strong>Lesson 3 — a document that verifies can still be worthless.</strong>
+      We replaced the text, signed it with a <em>different</em> ML-DSA key we generated just now,
+      and swapped the public key in the package to match. Every check the verifier can run
+      passes:</div>
+      <p class="text-sm mt-1">
+        Content integrity (SHA-256): ${signal(result.contentIntact, 'passes')}
+        <br>
+        Signature (ML-DSA): ${signal(result.signatureValid, 'passes — it is a real signature, under a real key')}
+      </p>
+      <div class="mt-1"><span class="badge ${result.valid ? 'badge-pass' : 'badge-fail'}" id="forge-verdict">${
+        result.valid ? '✓ VERIFIED — AND MEANINGLESS' : '✗ FAILED'
+      }</span></div>
+      <p class="text-sm mt-1">Signer label still reads
+      <strong>${escapeHTML(forged.signerLabel)}</strong> — it is free text with no cryptographic
+      force at all.</p>
+      <div class="text-sm mt-1"><strong>The only thing that changed, and the only thing that matters:</strong></div>
+      <p class="text-sm mt-1">
+        Original public key: <span class="mono" id="forge-original-key">${escapeHTML(originalKey.slice(0, 32))}…</span><br>
+        Forged public key: <span class="mono text-red" id="forge-attacker-key">${escapeHTML(forgedKey.slice(0, 32))}…</span>
+      </p>
+      <p class="text-sm text-muted mt-1">
+        A signature authenticates a message <em>relative to a public key you already trust</em>.
+        This package hands you the key along with the signature, so it authenticates nothing —
+        it is a self-signed assertion by whoever made it. In a real system the verifier obtains
+        the public key beforehand, through a channel that binds it to an identity: a certificate
+        from a CA, a key pinned in your application, a fingerprint checked out of band.
+        FIPS 204 §3.5 puts it directly — <em>"binding a public key to an identity requires proof
+        of possession"</em>. ${cite('identityBinding')}
+      </p>
     </div>
   `;
 }
