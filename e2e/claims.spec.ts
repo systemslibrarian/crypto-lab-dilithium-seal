@@ -167,6 +167,11 @@ test('FIPS 204 sizes agree across the About table, the Compare table and the par
 
   // Compare tab's scheme table must carry the same public key / signature sizes.
   await page.locator('#tab-btn-compare').click();
+  // `evaluateAll` and `$$eval` do NOT auto-wait — they evaluate against whatever
+  // is in the DOM right now, and return an empty list if the panel has not
+  // rendered. That was invisible while every tab rendered synchronously; with
+  // panels loaded on demand it is a race. Wait for the elements first.
+  await expect(page.locator('#tab-content .comparison-table tbody tr').first()).toBeVisible();
   const compare = await page
     .locator('#tab-content .comparison-table tbody tr')
     .evaluateAll((trs) =>
@@ -735,6 +740,7 @@ test('the size bar charts encode the same numbers as the comparison table', asyn
   test.setTimeout(60_000);
   await page.goto('.');
   await page.locator('#tab-btn-compare').click();
+  await expect(page.locator('#tab-content .comparison-table tbody tr').first()).toBeVisible();
 
   const table = await page
     .locator('#tab-content .comparison-table tbody tr')
@@ -749,6 +755,7 @@ test('the size bar charts encode the same numbers as the comparison table', asyn
     ['#pk-bars', 0],
     ['#sig-bars', 1],
   ] as const) {
+    await expect(page.locator(`${chartId} .bar-row`).first()).toBeVisible();
     const bars = await page.locator(`${chartId} .bar-row`).evaluateAll((rows) =>
       rows.map((row) => ({
         label: row.getAttribute('aria-label') ?? '',

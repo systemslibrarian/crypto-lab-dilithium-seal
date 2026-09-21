@@ -260,6 +260,11 @@ test.describe('network isolation', () => {
     // asserted the elements exist.
     await page.goto('.');
     await page.locator('#tab-btn-compare').click();
+  // `evaluateAll` and `$$eval` do NOT auto-wait — they evaluate against whatever
+  // is in the DOM right now, and return an empty list if the panel has not
+  // rendered. That was invisible while every tab rendered synchronously; with
+  // panels loaded on demand it is a race. Wait for the elements first.
+    await expect(page.locator('#pk-bars .bar-fill').first()).toBeVisible();
     const widths = await page.$$eval('#pk-bars .bar-fill', (els) =>
       els.map((e) => (e as HTMLElement).style.width)
     );
