@@ -17,14 +17,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  # ── Vulnerability gate ───────────────────────────────────────────────────
+  # `npm audit --audit-level=moderate` exits non-zero on any moderate, high or
+  # critical advisory, so this job FAILS CLOSED: a PR that introduces one cannot
+  # go green, and `deploy` and `dependabot-auto-merge` both list it in `needs:`
+  # so neither can run past it. Dev dependencies are audited too, deliberately —
+  # the build pipeline is part of this lab's attack surface, and a compromised
+  # bundler ships to Pages just as surely as a compromised runtime dependency
+  # would.
+  #
+  # `npm ci` is used rather than `npm install` so the audit describes the exact
+  # tree the build and the tests will use, not a freshly re-resolved one.
+  audit:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: npm audit (moderate and above)
+        run: npm run audit:ci
+
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # Read from .nvmrc so CI and a local checkout cannot drift. Node 20 was
+          # pinned here before and is both end-of-life and outside vitest 5's
+          # supported range (^22.12.0 || ^24.0.0 || >=26.0.0), so the unit suite
+          # had been running on an unsupported major.
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
@@ -50,8 +80,8 @@ jobs:
 
   deploy:
     if: github.event_name != 'pull_request'
-    needs: build
-    runs-on: ubuntu-latest
+    needs: [audit, build]
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -59,15 +89,16 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v5
 
-  # Dependabot only. Runs after the gate above, so a bump can only merge itself
-  # if this lab's own tests, build and axe/e2e run went green on the PR.
-  # Majors are deliberately excluded -- the 2026-08-18 batch had to hold back 109
-  # bumps and they were overwhelmingly majors (@noble v2 dropped export subpaths,
-  # TypeScript 7, vitest 4), so those still want a human.
+  # Dependabot only. Runs after BOTH gates above, so a bump can only merge itself
+  # if the vulnerability audit passed AND this lab's own unit tests, build and
+  # axe/e2e run went green on the PR. `needs: [audit, build]` is what makes the
+  # audit non-optional here: a bump that pulls in a moderate-or-higher advisory
+  # can no longer merge itself, which is the case the old `needs: build` missed
+  # entirely because nothing in the pipeline ran `npm audit` at all.
   dependabot-auto-merge:
-    needs: build
+    needs: [audit, build]
     if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       pull-requests: write

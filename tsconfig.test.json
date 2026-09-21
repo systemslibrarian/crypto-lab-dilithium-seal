@@ -1,0 +1,12 @@
+{
+  // The vitest suite, which reads the repo's own config files off disk and will
+  // read pinned NIST vectors the same way. It needs Node's types; the shipped
+  // browser bundle must not, which is why this is a second pass rather than a
+  // `types: ["node"]` added to tsconfig.json.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/__tests__"],
+  "exclude": []
+}

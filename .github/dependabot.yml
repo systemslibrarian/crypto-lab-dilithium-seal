@@ -8,11 +8,15 @@
 # a breaking major together with the safe bumps makes the whole PR unmergeable,
 # so majors come individually and a human decides.
 #
-# github-actions majors ARE grouped: checkout v4->v7, setup-node v4->v7 and the
-# Pages v5/v6 jumps were verified green across all 176 repos on 2026-08-18.
+# github-actions majors are now split out of their group too. They used to be
+# grouped on the strength of one verified batch (checkout v4->v7, setup-node
+# v4->v7, the Pages v5/v6 jumps, all green across 176 repos on 2026-08-18), but
+# "these particular majors were safe once" is not a property of future majors,
+# and an Actions major that changes an input breaks the whole grouped PR.
 #
-# The minor/patch group and the actions group auto-merge once this lab's own gate
-# passes on the PR -- see the dependabot-auto-merge job in the deploy workflow.
+# Both minor/patch groups and every individual major PR auto-merge only once this
+# lab's FULL gate passes on the PR -- the npm audit job and the unit/build/axe/e2e
+# job, both listed in `needs:` by dependabot-auto-merge in the deploy workflow.
 version: 2
 updates:
   - package-ecosystem: "npm"
@@ -28,12 +32,20 @@ updates:
           - "minor"
           - "patch"
 
+  # Minors and patches are grouped; majors are split out for the same reason as
+  # npm's -- an Actions major can change or remove inputs
+  # (upload-pages-artifact v3 renamed `path` handling, deploy-pages v4 changed its
+  # id-token requirements), and a breaking major bundled with safe ones makes the
+  # whole PR unmergeable.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      github-actions:
+      github-actions-minor-and-patch:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
