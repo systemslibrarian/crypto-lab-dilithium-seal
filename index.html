@@ -199,7 +199,13 @@
         </div>
         <aside class="cl-hero-why" aria-label="Why it matters">
           <span class="cl-hero-why-label">WHY IT MATTERS</span>
-          <p class="cl-hero-why-text">A quantum computer running Shor's algorithm would break RSA and ECDSA signatures. ML-DSA is the NIST-standardized replacement that keeps signatures unforgeable in the post-quantum era.</p>
+          <!-- "keeps signatures unforgeable" asserted as fact what is a design goal
+               resting on an unproven assumption. Nobody can say ML-DSA IS unforgeable;
+               what is true is that it is designed to be, under the hardness of
+               Module-LWE and Module-SIS, and that no efficient attack is known. This
+               is the most prominent claim on the page, so it is also the one that most
+               needed to be exact. -->
+          <p class="cl-hero-why-text">A quantum computer running Shor's algorithm would break RSA and ECDSA signatures. Shor's does not apply to lattice problems, so NIST standardized ML-DSA as the replacement: it is <em>designed</em> to keep signatures unforgeable against classical and quantum adversaries alike, resting on the assumption that Module-LWE and Module-SIS stay hard.</p>
         </aside>
         <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode">🌙</button>
       </header>
