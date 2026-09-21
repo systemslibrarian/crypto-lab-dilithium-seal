@@ -170,6 +170,11 @@ export function renderImplementationIdentity(): string {
           browser page.
         </li>
         <li>
+          <a href="${REPO}/blob/main/EVIDENCE.md" target="_blank" rel="noopener">Evidence table</a>
+          — every claim this demo makes, its primary source, the automated test
+          that keeps it true, and what it still does not prove.
+        </li>
+        <li>
           <a href="${REPO}/blob/main/vectors/acvp/SOURCE.md" target="_blank" rel="noopener">Conformance vector provenance</a>
           — which NIST ACVP vectors are pinned, at which commit, and what
           passing them does and does not prove.
