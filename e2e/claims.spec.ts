@@ -56,8 +56,13 @@ interface Table1Row {
 async function readTable1(page: Page): Promise<Record<Variant, Table1Row>> {
   await page.locator('#tab-btn-about').click();
   await expect(page.locator('#tab-content')).toContainText('FIPS 204 Table 1');
+  // Addressed by id, not by "the table on the About tab". The About tab now
+  // also carries the standards-status, lineage, claims and sources tables; a
+  // positional selector silently began reading rows out of those, and the
+  // claims table has no row header at all, so it failed on a null `th` rather
+  // than on a wrong number.
   const rows = await page
-    .locator('#tab-content table tbody tr')
+    .locator('#fips204-parameter-table tbody tr')
     .evaluateAll((trs) =>
       trs.map((tr) => ({
         name: (tr.querySelector('th') as HTMLElement).innerText.trim(),

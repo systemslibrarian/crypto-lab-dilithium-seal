@@ -1,19 +1,25 @@
 /**
- * Tab 5 — About & References
- * Reference: NIST FIPS 204 — https://csrc.nist.gov/pubs/fips/204/final
+ * Tab 5 — About, standards status and references.
+ *
+ * The standards-status panel lives here in full; a one-line summary of it is
+ * rendered beneath the tab bar on every tab by `renderStandardsStrip`, because
+ * a reader who never opens this tab still needs to know which edition of
+ * FIPS 204 the page describes and when it was last checked.
  */
+
+import { cite, renderStandardsStatus } from './provenance';
 
 export function renderAbout(container: HTMLElement): void {
   container.innerHTML = `
     <div class="card">
       <h2>About dilithium-seal</h2>
-      <p class="text-sm text-muted">A browser-based demonstration of <strong>ML-DSA (CRYSTALS-Dilithium)</strong> — the lattice-based digital signature scheme standardized as <strong>NIST FIPS 204</strong> in August 2024.</p>
+      <p class="text-sm text-muted">A browser-based demonstration of <strong>ML-DSA</strong> — the lattice-based digital signature scheme NIST published as <strong>FIPS 204</strong> in August 2024, standardized from the CRYSTALS-Dilithium submission ${cite('lineage')}. The operations on this page are real ML-DSA; nothing is simulated.</p>
       <p class="text-sm text-muted mt-1">Part of the <a href="https://github.com/systemslibrarian/crypto-compare" target="_blank" rel="noopener">crypto-compare</a> portfolio, completing the NIST PQC trio alongside <strong>kyber-vault</strong> (ML-KEM, FIPS 203) and <strong>sphincs-ledger</strong> (SLH-DSA, FIPS 205).</p>
     </div>
 
     <div class="card">
-      <h2>ML-DSA Parameter Reference (FIPS 204 Table 1)</h2>
-      <table class="comparison-table" tabindex="0">
+      <h2>ML-DSA Parameter Reference ${cite('parameters')}</h2>
+      <table class="comparison-table" id="fips204-parameter-table" tabindex="0">
         <caption class="sr-only">ML-DSA parameter sets from FIPS 204 Table 1: security category, key sizes, signature size, dimensions, and modulus.</caption>
         <thead>
           <tr>
@@ -56,8 +62,10 @@ export function renderAbout(container: HTMLElement): void {
           </tr>
         </tbody>
       </table>
-      <p class="text-sm text-muted mt-1">Source: <a href="https://csrc.nist.gov/pubs/fips/204/final" target="_blank" rel="noopener">NIST FIPS 204</a>, Table 1. All sizes in bytes. q = 2²³ − 2¹³ + 1.</p>
+      <p class="text-sm text-muted mt-1">Sizes from FIPS 204 Table 2 ${cite('sizes')}; dimensions and modulus from Table 1 ${cite('parameters')}; security categories from §4 ${cite('categories')}. All sizes in bytes. q = 2²³ − 2¹³ + 1.</p>
     </div>
+
+    ${renderStandardsStatus()}
 
     <div class="card">
       <h2>References</h2>
