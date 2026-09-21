@@ -291,3 +291,84 @@ test.describe('the identity-binding lesson is demonstrated, not just asserted', 
     await expect(page.locator('#btn-forge-seal')).toBeEnabled();
   });
 });
+
+test.describe('"not constant-time" is measured, not just asserted', () => {
+  const runPanel = async (page: Page): Promise<void> => {
+    await page.goto('.');
+    await page.locator('#tab-btn-how-it-works').click();
+    await page.locator('#step-btn-2').click();
+    await expect(page.locator('#tv-run')).toBeVisible();
+    await page.locator('#tv-run').click();
+    await expect(page.locator('#tv-stats')).toBeVisible({ timeout: 300_000 });
+  };
+
+  test('measures signing against a control with no rejection loop', async ({ page }) => {
+    test.setTimeout(600_000);
+    await runPanel(page);
+
+    const rows = await page.locator('#tv-stats tbody tr').evaluateAll((trs) =>
+      trs.map((tr) => ({
+        op: (tr.querySelector('th') as HTMLElement).innerText.trim(),
+        cells: Array.from(tr.querySelectorAll('td')).map((td) => (td as HTMLElement).innerText.trim()),
+      })),
+    );
+    expect(rows.map((r) => r.op)).toEqual(['Signing', 'Verification (control)']);
+    // Both histograms drawn, with bars actually sized through the CSSOM.
+    for (const id of ['#tv-hist-sign', '#tv-hist-verify']) {
+      const heights = await page.$$eval(`${id} .tv-bar`, (els) =>
+        els.map((e) => (e as HTMLElement).style.height),
+      );
+      expect(heights.length, id).toBe(24);
+      expect(heights.filter((h) => h && h !== '0%').length, id).toBeGreaterThan(1);
+    }
+  });
+
+  test('signing shows the tail a rejection loop produces', async ({ page }) => {
+    test.setTimeout(600_000);
+    await runPanel(page);
+    const cells = await page
+      .locator('#tv-stats tbody tr')
+      .first()
+      .locator('td')
+      .evaluateAll((tds) => tds.map((td) => (td as HTMLElement).innerText.trim()));
+    const [median, p95, max] = cells.map((c) => Number(c));
+    // FIPS 204 signing repeats until its response passes a norm check, so the
+    // distribution must have a right tail. A flat one would mean the loop is
+    // not doing what the page says it does.
+    expect(p95).toBeGreaterThan(median);
+    expect(max).toBeGreaterThanOrEqual(p95);
+  });
+
+  test('the stated conclusion matches the numbers it was drawn from', async ({ page }) => {
+    // Not "signing must spread more than verification" — that is a measurement,
+    // and a gate must not depend on one. What must hold is that the sentence
+    // agrees with the table beside it, whichever way the numbers fall.
+    test.setTimeout(600_000);
+    await runPanel(page);
+    const spreads = await page
+      .locator('#tv-stats tbody tr')
+      .evaluateAll((trs) =>
+        trs.map((tr) => Number((tr.querySelectorAll('td')[3] as HTMLElement).innerText.replace('×', ''))),
+      );
+    const [signSpread, verifySpread] = spreads;
+    const conclusion = await page.locator('#tv-conclusion').innerText();
+    expect(conclusion).toContain(`${signSpread.toFixed(1)}×`);
+    expect(conclusion).toContain(`${verifySpread.toFixed(1)}×`);
+    expect(conclusion).toMatch(
+      signSpread > verifySpread ? /varies\s+substantially more/ : /varies\s+no more/,
+    );
+    expect(conclusion).toMatch(/that is what "not constant-time" means/i);
+  });
+
+  test('never claims a key-recovery attack', async ({ page }) => {
+    test.setTimeout(600_000);
+    await runPanel(page);
+    const caveat = await page.locator('#tv-caveat').innerText();
+    expect(caveat).toMatch(/not a key-recovery attack/i);
+    expect(caveat).toMatch(/does not measure the loop's trip count/i);
+    expect(caveat).toMatch(/necessary condition .* not a sufficient one/i);
+    const whole = await page.locator('#tab-content').innerText();
+    expect(whole).not.toMatch(/recovers? the (private |secret )?key/i);
+    expect(whole).not.toMatch(/\bexploit(s|able)?\b/i);
+  });
+});

@@ -79,7 +79,7 @@ is not a validation.
 
 | # | Claim | Primary source | Automated test | Remaining limitation |
 |---|---|---|---|---|
-| 6.1 | Execution is **not** guaranteed constant-time | Library README, quoted | `runtime.spec.ts` — the limitation must render; no page may assert the property | No mitigation exists here. Use a native constant-time implementation if this is your threat model |
+| 6.1 | Execution is **not** guaranteed constant-time | Library README, quoted; FIPS 204 Table 1 (repetitions) | `runtime.spec.ts` (stated) **and** `fidelity.spec.ts` (**measured** — 300 signatures against 300 verifications as a control, with the rendered conclusion required to match the table it was drawn from) | No mitigation exists here. The measurement shows the channel exists; it is **not** a key-recovery attack and does not show one is possible |
 | 6.2 | Secrets cannot be reliably erased from GC'd memory | FIPS 204 §3.6.3 | `runtime.spec.ts` | Unfixable in JavaScript |
 | 6.3 | A valid signature does not establish **identity** | FIPS 204 §3.5 | `runtime.spec.ts` (stated) **and** `fidelity.spec.ts` (demonstrated — "Forge a Verifying Seal" produces a package where every check passes, under a real key that is not the signer's) | Still true of the demo's format by design. It is now shown rather than only asserted, and the page names the routes a real system uses instead |
 | 6.4 | Passing vectors is not an audit or a validation | — | `runtime.spec.ts` | — |
@@ -127,7 +127,7 @@ is not a validation.
 1. **No independent audit** of the cryptographic implementation, and none of this repository's code.
 2. **No CMVP or FIPS 140 validation.**
 3. **No reproducible-build attestation** and no signature on the published bundle.
-4. **No constant-time guarantee**, and no way to obtain one in JavaScript.
+4. **No constant-time guarantee**, and no way to obtain one in JavaScript. The page now *measures* the resulting variability against a control rather than only asserting it.
 5. **No protection against a compromised host page or extension.**
 6. **No identity binding** — by design, stated wherever it could mislead, and now *demonstrated* by a control that forges a package which verifies perfectly.
 7. **A thin performance margin** against the Lighthouse budget on CI hardware.

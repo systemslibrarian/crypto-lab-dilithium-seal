@@ -1154,3 +1154,33 @@ a:focus-visible {
    apart from the tamper lessons above, which end in a refusal; this one ends in
    a ✓ that means nothing, which is a different and more dangerous shape. */
 .forge-lesson { border-left: 3px solid var(--red); padding-left: 0.75rem; }
+
+/* ── Timing-variability histogram ──────────────────────────────────────────
+   Bar heights come through the CSSOM like every other measured value here; an
+   inline style attribute would need `style-src 'unsafe-inline'`. */
+.tv-heading {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin: 0.75rem 0 0.3rem;
+}
+.tv-histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 90px;
+  padding: 0.4rem;
+  background-color: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.tv-col { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; }
+.tv-bar-track { width: 100%; height: 100%; display: flex; align-items: flex-end; }
+.tv-bar { display: block; width: 100%; background-color: var(--accent); border-radius: 2px 2px 0 0; }
+.tv-axis {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}

@@ -8,6 +8,7 @@
  */
 
 import { renderFiatShamir, renderModuleLWE } from './viz-render';
+import { renderTimingVariability } from './timing-variability';
 import { cite } from './provenance';
 import { fidelityBadge, fidelityLegend } from './fidelity';
 import { FIPS_204_EDITION, formatDate } from '../data/sources';
@@ -66,6 +67,9 @@ const STEPS: StepInfo[] = [
       <p>ML-DSA uses the "Fiat-Shamir with aborts" paradigm. The abort mechanism is what distinguishes it from schoolbook Schnorr — it prevents signatures from leaking the private key. <strong>Run the visualization below to watch the reject-and-retry loop happen for real</strong>, then read the exact algebra beneath it.</p>
 
       <div id="mount-fiat-shamir" class="viz-mount"></div>
+
+      <h3 class="mt-2">The loop you cannot see, measured</h3>
+      <div id="mount-timing-variability" class="viz-mount"></div>
 
       <details class="math-details">
         <summary>Show the exact FIPS 204 algebra</summary>
@@ -218,6 +222,10 @@ export function renderHowItWorks(container: HTMLElement): void {
     if (step.viz === 'fiat-shamir') {
       const mount = div.querySelector<HTMLElement>('#mount-fiat-shamir');
       if (mount) renderFiatShamir(mount);
+      // The real signer's timing, immediately below the toy model of the loop
+      // that causes it: mechanism, then observable consequence.
+      const timing = div.querySelector<HTMLElement>('#mount-timing-variability');
+      if (timing) renderTimingVariability(timing);
     } else if (step.viz === 'module-lwe') {
       const mount = div.querySelector<HTMLElement>('#mount-module-lwe');
       if (mount) renderModuleLWE(mount);
