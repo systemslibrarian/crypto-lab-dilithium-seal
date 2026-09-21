@@ -186,3 +186,33 @@ test.describe('claims carry citations', () => {
     await expect(cites.first()).toHaveAttribute('href', /csrc\.nist\.gov/);
   });
 });
+
+test.describe('security claims are hedged where they must be', () => {
+  test('the hero states unforgeability as a design goal under an assumption', async ({ page }) => {
+    // "ML-DSA … keeps signatures unforgeable" asserted as fact what is a design
+    // goal resting on an unproven hardness assumption. It is the most prominent
+    // claim on the page and therefore the one that most needs to be exact.
+    await page.goto('.');
+    const hero = await page.locator('.cl-hero-why-text').innerText();
+    expect(hero).not.toMatch(/that keeps signatures unforgeable/i);
+    expect(hero).toMatch(/designed/i);
+    expect(hero).toMatch(/assumption/i);
+    expect(hero).toMatch(/Module-LWE and Module-SIS/);
+  });
+
+  test('no page states a security property as an achieved fact', async ({ page }) => {
+    await page.goto('.');
+    for (const id of ['sign-verify', 'compare', 'how-it-works', 'pqc-trio', 'about']) {
+      await page.locator(`#tab-btn-${id}`).click();
+      await expect(page.locator('#tab-content')).not.toBeEmpty();
+      const text = await page.locator('#app').innerText();
+      // Unhedged absolutes. Each of these would be a claim no implementation of
+      // any signature scheme can support.
+      expect(text, id).not.toMatch(/\bis unbreakable\b/i);
+      expect(text, id).not.toMatch(/\bcannot be (broken|forged)\b/i);
+      expect(text, id).not.toMatch(/\bguarantees? (security|unforgeability)\b/i);
+      expect(text, id).not.toMatch(/\bprovably secure\b/i);
+      expect(text, id).not.toMatch(/\b100% secure\b/i);
+    }
+  });
+});
