@@ -75,6 +75,94 @@ Drafts are labelled as drafts. NIST IR 8547, the transition-timeline document,
 is still an **Initial Public Draft**, and the page says so wherever its dates
 appear.
 
+## Project Assurance and Quality Gates
+
+| Document | What it is for |
+|---|---|
+| [SECURITY.md](SECURITY.md) | How to report a vulnerability, what is in and out of scope, and the table of security properties CI enforces |
+| [THREAT-MODEL.md](THREAT-MODEL.md) | Assets, trust boundary, and eight named threats with what is done about each and where it stops |
+| [KNOWN-LIMITATIONS.md](KNOWN-LIMITATIONS.md) | Sixteen limitations in full, including the ones that cannot be fixed in a browser page |
+| [.github/CODEOWNERS](.github/CODEOWNERS) | Review required on the crypto path, the claim data, the build gates and the supply chain |
+
+All four are linked from the About tab, and a browser test asserts those links
+render and point at this repository.
+
+### Supply chain
+
+- **Every GitHub Action is pinned to an immutable full-commit SHA**, with a
+  `# vX.Y.Z` comment so a human can read it and Dependabot can update it.
+  `scripts/check-action-pins.mjs` fails CI on a tag pin, a branch pin, a short
+  SHA, or a pin with no version comment — each case unit-tested against input
+  that must fail.
+- **A CycloneDX 1.6 SBOM** is generated from the lockfile in CI and published as
+  a build artifact. Written directly rather than adding `@cyclonedx/cyclonedx-npm`:
+  a tool to describe the dependency tree would add ~40 packages *to* the
+  dependency tree, all of them inside the audit gate.
+- **Node and runner are exact.** Node 22 from a single `.nvmrc` via
+  `node-version-file`; `ubuntu-24.04`, never `ubuntu-latest`. Tests assert no
+  literal `node-version:` and no `-latest` runner survives anywhere.
+
+### Lighthouse budgets
+
+Three runs per CI job:
+
+| Category | Minimum | Combined by |
+|---|---|---|
+| Performance | 0.90 | median |
+| Accessibility | **1.00** | **worst run** |
+| Best practices | 0.90 | median |
+| SEO | 0.90 | median |
+
+Median for the timing-sensitive categories, because a single run on a shared
+runner is noisy enough to fail at random — which trains everyone to re-run CI
+until it passes, at which point the gate has stopped being one. Accessibility
+is scored from deterministic audits and its threshold is 1.00, so the **worst**
+run is the one that matters.
+
+Getting accessibility to 1.00 required fixing two real defects Lighthouse found
+that the repo's own axe gate had been blind to:
+
+- **The document had no `main` landmark.** `role="tabpanel"` on `<main>`
+  *overrode* its implicit landmark role. The axe gate missed it because
+  `landmark-one-main` is a best-practice rule, not a WCAG-tagged one.
+- **WCAG 2.5.3 (Label in Name, level A).** The citation links added in
+  Priority 4 had visible text "FIPS 204 Table 2" and an accessible name of
+  "Source: FIPS 204: Module-Lattice-Based…, Table 2" — the colon breaks the
+  substring, so a voice-control user could not activate what they could see.
+  The rule is tagged `experimental` in axe-core and off by default; it is now
+  explicitly enabled in the gate.
+
+### Browser resilience
+
+`e2e/resilience.spec.ts`, 34 tests:
+
+- **320px, 768px and 1440px** — every tab, plus the signing chain, with a
+  horizontal-overflow check at each. This found a real 320px reflow failure the
+  380px gate never saw: the two-column info grid cannot hold an unbreakable
+  mono value at that width.
+- **Forced-colors mode** — the demo still works, verdicts stay distinguishable
+  by text rather than colour, fidelity labels still say what they mean, and no
+  content is hidden by the forced palette.
+- **Reduced motion** — the preference reaches the page, and the Fiat-Shamir
+  cards render visibly rather than being left at an animation's start state.
+- **Keyboard only** — both skip links, the tablist in both directions including
+  wrap plus Home/End, the parameter radiogroup's roving tabindex, the whole
+  signing chain driven by Enter, and a visible focus indicator on every control.
+- **The complete selector** — all three sets, each updating security category,
+  sizes and guidance; real KeyGen → Sign → Verify at that set's own byte counts;
+  modified-message and modified-signature rejection for every set.
+- **Discoverability** — the security policy, threat model, limitations, sources
+  and implementation identity are all reachable from the page.
+
+### Dark and light themes
+
+The stylesheet always carried a complete light palette that **no visitor could
+reach** — the page pinned dark unconditionally. Since the shared Crypto Lab
+header hides in-page theme toggles fleet-wide, `prefers-color-scheme` is the
+only control a visitor has, and it was being ignored. It is now honoured, and
+the axe gate runs both themes at both widths — which immediately found the
+light-theme amber failing 1.4.3 at 4.27:1 on a small bold label.
+
 ## Reproducible Benchmark Evidence
 
 The old panel ran 50 signatures per parameter set in one blocking loop, divided

@@ -1,0 +1,36 @@
+# Every change needs a review from the owner.
+#
+# This repository publishes real cryptographic operations and makes factual
+# claims about a NIST standard, so the paths below are called out explicitly
+# rather than relying on the catch-all: a wrong number in a parameter table or a
+# quietly weakened CSP is as much a defect here as a broken signature.
+
+* @systemslibrarian
+
+# The cryptographic path and its evidence.
+/src/crypto/                    @systemslibrarian
+/src/bench/                     @systemslibrarian
+/vectors/                       @systemslibrarian
+/src/__tests__/                 @systemslibrarian
+
+# Claims about the standard. A wrong parameter or an uncited assertion is a
+# defect, not a typo.
+/src/data/                      @systemslibrarian
+/src/ui/provenance.ts           @systemslibrarian
+/src/ui/parameter-table.ts      @systemslibrarian
+/src/ui/fidelity.ts             @systemslibrarian
+
+# The build gates that enforce what the page says about itself.
+/build/                         @systemslibrarian
+/scripts/                       @systemslibrarian
+
+# Supply chain and release.
+/.github/                       @systemslibrarian
+/package.json                   @systemslibrarian
+/package-lock.json              @systemslibrarian
+/.nvmrc                         @systemslibrarian
+
+# Assurance documentation.
+/SECURITY.md                    @systemslibrarian
+/THREAT-MODEL.md                @systemslibrarian
+/KNOWN-LIMITATIONS.md           @systemslibrarian

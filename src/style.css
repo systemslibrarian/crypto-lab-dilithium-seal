@@ -20,6 +20,7 @@
   --red: #f85149;
   --red-hover: #ff6b63;
   --yellow: #d29922;
+  --yellow-hover: #e3b341;
   --blue: #58a6ff;
   --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Menlo', monospace;
   --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -40,7 +41,12 @@
   --green: #1a7f37;
   --red: #d1242f;
   --red-hover: #a40e26;
-  --yellow: #9a6700;
+  /* #9a6700 is GitHub's light "attention" colour and measures 4.27:1 on
+     --surface2, which fails WCAG 1.4.3 for the small bold text of a fidelity
+     label. The a11y gate caught it the moment the light palette became
+     reachable. #8a5a00 measures 5.3:1 on --surface2 and 5.9:1 on --surface. */
+  --yellow: #8a5a00;
+  --yellow-hover: #6d4700;
   --blue: #0969da;
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
 }
@@ -1000,7 +1006,7 @@ a:focus-visible {
 /* A citation whose claim a second source qualifies or corrects. The ⚠ in the
    link text carries the meaning; the colour only reinforces it (WCAG 1.4.1). */
 .cite-qualified { color: var(--yellow); }
-.cite-qualified:hover { color: #e3b341; }
+.cite-qualified:hover { color: var(--yellow-hover); }
 
 .text-yellow { color: var(--yellow); }
 
@@ -1116,3 +1122,24 @@ a:focus-visible {
   font-variant-numeric: tabular-nums;
   font-family: var(--mono);
 }
+
+/* Parameter-set selection guidance. */
+.selector-questions { margin-bottom: 1rem; }
+.selector-question { margin-bottom: 0.75rem; }
+.selector-question:last-child { margin-bottom: 0; }
+.selector-question-title {
+  font-size: 0.88rem;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+/* ── Reflow at the smallest common phone width (WCAG 1.4.10) ───────────────
+   The info grid drops to two columns below 560px, which is right for a 380px
+   phone and 2px too wide at 320px: a 140px column cannot hold an unbreakable
+   mono value like "getRandomValues", and the page gained a horizontal scrollbar
+   on the About tab. The 380px a11y gate never saw it; the 320px resilience
+   test does. One column below 400px, and long values wrap rather than push. */
+@media (max-width: 400px) {
+  .info-grid { grid-template-columns: 1fr; }
+}
+.info-item .value { overflow-wrap: anywhere; }

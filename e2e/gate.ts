@@ -140,8 +140,11 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
   // whole test timeout and reports nothing useful. 20s turns that silent hang
   // into a named failure naming the locator.
   page.setDefaultTimeout(20_000);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.addInitScript((t) => localStorage.setItem('theme', t), theme);
+  // The theme now follows `prefers-color-scheme`, which is the only control a
+  // visitor has (the shared header hides in-page toggles fleet-wide). So it is
+  // driven the way a visitor drives it — through the media query — rather than
+  // by writing localStorage, which the page no longer reads for this.
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: theme });
   await page.goto('.');
   expect(
     await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches),
@@ -441,7 +444,17 @@ export function expectBaselineNotStale(): void {
 export async function scan(page: Page, label: string): Promise<void> {
   await settle(page);
   await expectNotBlank(page, label);
-  const results = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+  // `label-content-name-mismatch` is WCAG 2.5.3 (Label in Name, level A) but is
+  // tagged `experimental` in axe-core, so `withTags(['wcag21a', …])` does NOT
+  // run it. Lighthouse found a real 2.5.3 failure this gate had been blind to,
+  // so it is enabled explicitly rather than left to the tag list.
+  // Order matters: `.options()` REPLACES the whole axe options object, so
+  // calling it after `.withTags()` discards the `runOnly` tag filter and pulls
+  // in every best-practice rule. `.withTags()` must come last.
+  const results = await new AxeBuilder({ page })
+    .options({ rules: { 'label-content-name-mismatch': { enabled: true } } })
+    .withTags(TAGS)
+    .analyze();
 
   const violations = results.violations.map((v) => ({
     state: label,

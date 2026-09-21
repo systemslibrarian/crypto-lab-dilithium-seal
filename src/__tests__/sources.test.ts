@@ -203,15 +203,39 @@ describe('rendering', () => {
     const html = cite('sizes');
     expect(html).toContain('href="https://csrc.nist.gov/pubs/fips/204/final"');
     expect(html).toContain('rel="noopener"');
-    expect(html).toContain('aria-label="Source: FIPS 204');
     expect(html).toContain('Table 2');
+    // The name must still NAME the document — "FIPS 204 Tbl 2" read aloud in a
+    // list of links is not a destination anyone can choose between.
+    expect(html).toContain('Module-Lattice-Based Digital Signature Standard');
+  });
+
+  /** The visible text of a rendered `cite()`, and its accessible name. */
+  const parts = (html: string): { visible: string; name: string } => ({
+    visible: html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
+    name: html.match(/aria-label="([^"]*)"/)![1].replace(/\s+/g, ' ').trim(),
+  });
+
+  it('satisfies WCAG 2.5.3: the accessible name contains the visible text', () => {
+    // Level A. A voice-control user says what they can see; if the name does
+    // not contain it, the link cannot be activated by voice. The first version
+    // of this marker read "Source: FIPS 204: Module-Lattice-Based…, Table 2",
+    // which does NOT contain the visible "FIPS 204 Table 2" — the colon after
+    // "FIPS 204" breaks the substring. Lighthouse caught it.
+    for (const id of Object.keys(CLAIMS)) {
+      const { visible, name } = parts(cite(id));
+      // The ⚠ is decorative and not part of the label to be matched.
+      const label = visible.replace(/\s*⚠$/, '');
+      expect(name.toLowerCase(), `${id}: "${name}" must contain "${label}"`).toContain(
+        label.toLowerCase()
+      );
+    }
   });
 
   it('marks a qualified claim visibly and in its accessible name', () => {
     const html = cite('repetitions');
     expect(html).toContain('cite-qualified');
     expect(html).toContain('⚠');
-    expect(html).toContain('recorded qualification');
+    expect(html).toContain('qualified; see the standards-status panel');
   });
 
   it('refuses to render a citation for an unregistered claim', () => {

@@ -31,9 +31,9 @@ jobs:
   audit:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -43,12 +43,28 @@ jobs:
       - name: npm audit (moderate and above)
         run: npm run audit:ci
 
+      # A tag is a pointer its owner can move; a commit SHA cannot be. An
+      # unpinned action runs with this repository's GITHUB_TOKEN and its
+      # pages: write permission, and leaves no trace in this repo's diff.
+      - name: Every GitHub Action is pinned to a commit SHA
+        run: npm run check:action-pins
+
+      - name: Generate CycloneDX SBOM
+        run: npm run sbom
+
+      - name: Publish the SBOM as a build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-cyclonedx
+          path: sbom.cdx.json
+          if-no-files-found: error
+
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           # Read from .nvmrc so CI and a local checkout cannot drift. Node 20 was
           # pinned here before and is both end-of-life and outside vitest 5's
@@ -74,29 +90,75 @@ jobs:
       - name: Accessibility gate (axe-core, WCAG A/AA)
         run: npm run test:a11y
 
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
+  # Lighthouse budgets, three runs. Separate from `build` so a noisy
+  # performance score on a shared runner is legible as its own failure rather
+  # than looking like a broken test, and so it can run in parallel.
+  lighthouse:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # A readiness loop rather than a wait-for-it package: one fewer dependency
+      # inside the audit gate, for four lines of shell.
+      - name: Serve the production build
+        run: |
+          npm run preview -- --port 4173 --strictPort &
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:4173/crypto-lab-dilithium-seal/ >/dev/null; then
+              echo "preview is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "preview did not come up within 60s" >&2; exit 1
+
+      # Performance / best-practices / SEO are judged on the MEDIAN of three
+      # runs, because a single run on a shared runner is noisy enough to fail at
+      # random -- which trains everyone to re-run CI until it passes, at which
+      # point the gate has stopped being one. Accessibility is judged on the
+      # WORST run, because its threshold is 1.00 and it is scored from
+      # deterministic audits rather than timings.
+      - name: Lighthouse budgets
+        run: npm run lighthouse -- http://localhost:4173/crypto-lab-dilithium-seal/
+
+      - name: Publish the Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-report
+          path: lighthouse-report/
+          if-no-files-found: warn
+
   deploy:
     if: github.event_name != 'pull_request'
-    needs: [audit, build]
+    needs: [audit, build, lighthouse]
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
-  # Dependabot only. Runs after BOTH gates above, so a bump can only merge itself
-  # if the vulnerability audit passed AND this lab's own unit tests, build and
-  # axe/e2e run went green on the PR. `needs: [audit, build]` is what makes the
-  # audit non-optional here: a bump that pulls in a moderate-or-higher advisory
-  # can no longer merge itself, which is the case the old `needs: build` missed
-  # entirely because nothing in the pipeline ran `npm audit` at all.
+  # Dependabot only. Runs after EVERY gate above, so a bump can only merge itself
+  # if the vulnerability audit and action-pin check passed, this lab's own unit
+  # tests, build and axe/e2e run went green, AND the Lighthouse budgets were met.
+  # `needs:` is what makes each of those non-optional: a bump that pulls in a
+  # moderate-or-higher advisory, or that costs a point of accessibility, can no
+  # longer merge itself.
   dependabot-auto-merge:
-    needs: [audit, build]
+    needs: [audit, build, lighthouse]
     if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
     runs-on: ubuntu-24.04
     permissions:
@@ -105,7 +167,7 @@ jobs:
       actions: write   # required by the deploy dispatch; without it gh workflow run 403s
     steps:
       - id: meta
-        uses: dependabot/fetch-metadata@v3
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
       # Majors included on purpose. `needs:` above already required the whole
       # gate to pass, and that gate -- unit tests, build, axe WCAG and the e2e
       # claims -- judges a bump far better than its version number does. A major

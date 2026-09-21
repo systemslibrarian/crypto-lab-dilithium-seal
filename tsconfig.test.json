@@ -5,8 +5,12 @@
   // `types: ["node"]` added to tsconfig.json.
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    // The supply-chain scripts are plain .mjs so `node scripts/x.mjs` runs them
+    // with no build step and no loader flag. `allowJs` lets this pass infer
+    // their types so the tests that import them are still type-checked.
+    "allowJs": true
   },
-  "include": ["src/__tests__", "build"],
+  "include": ["src/__tests__", "build", "scripts"],
   "exclude": []
 }

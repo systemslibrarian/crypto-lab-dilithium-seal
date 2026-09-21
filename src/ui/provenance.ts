@@ -34,11 +34,18 @@ export function cite(claimId: string): string {
   const s = source(c.sourceId);
   const label = `${s.short} ${c.locator}`;
   const qualified = c.qualifiedBy ? ' ⚠' : '';
+  // WCAG 2.5.3 (Label in Name, level A): the accessible name must CONTAIN the
+  // visible text, so a voice-control user can say what they can see. The first
+  // version read "Source: FIPS 204: Module-Lattice-Based…, Table 2", which does
+  // NOT contain the visible "FIPS 204 Table 2" — the colon after "FIPS 204"
+  // breaks the substring. Lighthouse caught it; the repo's own axe gate did
+  // not, because that rule is tagged experimental and off by default. It is now
+  // enabled in e2e/gate.ts. The visible label therefore leads the name.
   return (
     `<a class="cite${c.qualifiedBy ? ' cite-qualified' : ''}" href="${escapeHTML(s.url)}" ` +
     `target="_blank" rel="noopener" ` +
-    `aria-label="Source: ${escapeHTML(s.title)}, ${escapeHTML(c.locator)}` +
-    `${c.qualifiedBy ? ' — see the standards-status panel for a recorded qualification' : ''}">` +
+    `aria-label="${escapeHTML(label)} — source: ${escapeHTML(s.title)}` +
+    `${c.qualifiedBy ? ', qualified; see the standards-status panel' : ''}">` +
     `${escapeHTML(label)}${qualified}</a>`
   );
 }
