@@ -81,7 +81,7 @@ is not a validation.
 |---|---|---|---|---|
 | 6.1 | Execution is **not** guaranteed constant-time | Library README, quoted | `runtime.spec.ts` — the limitation must render; no page may assert the property | No mitigation exists here. Use a native constant-time implementation if this is your threat model |
 | 6.2 | Secrets cannot be reliably erased from GC'd memory | FIPS 204 §3.6.3 | `runtime.spec.ts` | Unfixable in JavaScript |
-| 6.3 | A valid signature does not establish **identity** | FIPS 204 §3.5 | `runtime.spec.ts` | The demo's sealed document carries the public key beside the signature, so a wholesale re-sign verifies and means nothing. This is the demo's nature, stated |
+| 6.3 | A valid signature does not establish **identity** | FIPS 204 §3.5 | `runtime.spec.ts` (stated) **and** `fidelity.spec.ts` (demonstrated — "Forge a Verifying Seal" produces a package where every check passes, under a real key that is not the signer's) | Still true of the demo's format by design. It is now shown rather than only asserted, and the page names the routes a real system uses instead |
 | 6.4 | Passing vectors is not an audit or a validation | — | `runtime.spec.ts` | — |
 
 ## 7. Real operation versus teaching model
@@ -129,6 +129,6 @@ is not a validation.
 3. **No reproducible-build attestation** and no signature on the published bundle.
 4. **No constant-time guarantee**, and no way to obtain one in JavaScript.
 5. **No protection against a compromised host page or extension.**
-6. **No identity binding** — by design, and stated wherever it could mislead.
+6. **No identity binding** — by design, stated wherever it could mislead, and now *demonstrated* by a control that forges a package which verifies perfectly.
 7. **A thin performance margin** against the Lighthouse budget on CI hardware.
 8. **Vector coverage is a subset** — 156 of 615 upstream ACVP cases, keeping every test *group* so no mode is dropped, but not every case.

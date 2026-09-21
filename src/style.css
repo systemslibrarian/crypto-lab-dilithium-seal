@@ -1149,3 +1149,8 @@ a:focus-visible {
    the table names the set in words as well. */
 .bench-selected th[scope='row'] { font-weight: 700; color: var(--accent); }
 .bench-selected td:first-of-type { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* Lesson 3: a forged package where every check passes. The border tone marks it
+   apart from the tamper lessons above, which end in a refusal; this one ends in
+   a ✓ that means nothing, which is a different and more dangerous shape. */
+.forge-lesson { border-left: 3px solid var(--red); padding-left: 0.75rem; }

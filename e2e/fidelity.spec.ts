@@ -232,3 +232,62 @@ test.describe('the parameter table is complete and real', () => {
     expect(text).toContain('errata: 3.91');
   });
 });
+
+test.describe('the identity-binding lesson is demonstrated, not just asserted', () => {
+  const seal = async (page: Page): Promise<void> => {
+    await page.goto('.');
+    await page.locator('#btn-keygen').click();
+    await expect(page.locator('#keygen-output')).toContainText('Public key');
+    await page.locator('#btn-seal').click();
+    await expect(page.locator('#seal-output .badge-pass')).toBeVisible();
+  };
+
+  test('a forged package verifies, and the page says why that is worthless', async ({ page }) => {
+    await seal(page);
+    await page.locator('#btn-forge-seal').click();
+    await expect(page.locator('#forge-lesson')).toBeVisible();
+
+    // The verdict really is a pass — that is the lesson, not a bug.
+    await expect(page.locator('#forge-verdict')).toHaveText('✓ VERIFIED — AND MEANINGLESS');
+    await expect(page.locator('#forge-verdict')).toHaveClass(/badge-pass/);
+
+    const text = await page.locator('#forge-lesson').innerText();
+    expect(text).toMatch(/real signature, under a real key/i);
+    expect(text).toMatch(/no cryptographic force/i);
+    expect(text).toMatch(/relative to a public key you already trust/i);
+    expect(text).toMatch(/proof\s+of\s+possession/i);
+  });
+
+  test('the forged key really is a different key', async ({ page }) => {
+    await seal(page);
+    await page.locator('#btn-forge-seal').click();
+    const original = await page.locator('#forge-original-key').innerText();
+    const forged = await page.locator('#forge-attacker-key').innerText();
+    expect(original).not.toBe(forged);
+    // Both are real base64 key prefixes, not placeholders.
+    for (const key of [original, forged]) {
+      expect(key.replace('…', '')).toHaveLength(32);
+      expect(key).toMatch(/^[A-Za-z0-9+/]+…$/);
+    }
+  });
+
+  test('it names the route a real system uses instead', async ({ page }) => {
+    // Showing the failure without showing the fix teaches despair, not crypto.
+    await seal(page);
+    await page.locator('#btn-forge-seal').click();
+    const text = await page.locator('#forge-lesson').innerText();
+    expect(text).toMatch(/certificate from a CA/i);
+    expect(text).toMatch(/pinned/i);
+    expect(text).toMatch(/fingerprint checked out of band/i);
+  });
+
+  test('the forge control is locked until there is a seal to forge', async ({ page }) => {
+    await page.goto('.');
+    await expect(page.locator('#btn-forge-seal')).toBeDisabled();
+    await page.locator('#btn-keygen').click();
+    await expect(page.locator('#keygen-output')).toContainText('Public key');
+    await expect(page.locator('#btn-forge-seal')).toBeDisabled();
+    await page.locator('#btn-seal').click();
+    await expect(page.locator('#btn-forge-seal')).toBeEnabled();
+  });
+});

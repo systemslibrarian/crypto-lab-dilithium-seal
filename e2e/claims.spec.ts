@@ -782,7 +782,10 @@ test('the size bar charts encode the same numbers as the comparison table', asyn
 test('every derived benchmark figure follows from the measurements printed beside it', async ({
   page,
 }) => {
-  test.setTimeout(300_000);
+  // Several specs drive a full benchmark, and they run in parallel: ~600
+  // ML-DSA operations each, competing for the same cores. The generous timeout
+  // is about contention, not about the page being slow.
+  test.setTimeout(600_000);
   const errors = watchForPageErrors(page);
   await page.goto('.');
   await page.locator('#tab-btn-compare').click();
@@ -819,9 +822,8 @@ test('every derived benchmark figure follows from the measurements printed besid
   // and dividing by it is not.
   const summary = await page.locator('#bench-baseline-summary').innerText();
   const exact = summary.match(/median sign ([\d.]+) ms/);
-  const unresolvable = /faster than this browser's clock can resolve/i.test(summary);
   expect(
-    Boolean(exact) || unresolvable,
+    Boolean(exact) || /faster than this browser's clock can resolve/i.test(summary),
     `baseline summary must state a median or say why it cannot: ${summary}`,
   ).toBe(true);
 
@@ -849,11 +851,21 @@ test('every derived benchmark figure follows from the measurements printed besid
     expect(Number(row.cells[3].replace(/[×>\s]/g, ''))).toBe(Math.round(sizes[row.set][0] / 32));
     expect(Number(row.cells[4].replace(/[×>\s]/g, ''))).toBe(Math.round(sizes[row.set][2] / 64));
 
+    // Which branch the page took is read from the CELL, not from the prose
+    // beside it. Deriving it from the sentence made this assertion depend on
+    // two renderings agreeing, and a run where Ed25519 landed right on the
+    // clock's resolution could disagree with itself. The cell is the claim
+    // being checked, so the cell decides how to check it.
     const signCell = row.cells[1];
-    if (unresolvable) {
+    if (signCell.startsWith('>')) {
       // A lower bound, marked as one. Never a bare number derived from zero.
       expect(signCell, `${row.set} sign ratio`).toMatch(/^>\s*\d+×$/);
+      // ...and a lower bound is only honest if the page also said why.
+      expect(summary, 'a lower bound must be explained').toMatch(
+        /faster than this browser's clock can resolve/i,
+      );
     } else {
+      expect(exact, `an exact ratio needs an exact baseline median: ${summary}`).not.toBeNull();
       const signRatio = Number(signCell.replace('×', ''));
       const derived = medians.get(`${row.set} sign`)! / Number(exact![1]);
       expect(
