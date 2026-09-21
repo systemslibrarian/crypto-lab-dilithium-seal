@@ -1,4 +1,4 @@
-name: Full ACVP conformance
+name: Weekly assurance
 
 # Weekly, and on demand. NOT a merge gate, deliberately.
 #
@@ -37,3 +37,30 @@ jobs:
       # against the SHA-256 in vectors/acvp/manifest.json, and runs every case.
       - name: All 615 NIST ACVP ML-DSA cases
         run: npm run conformance:full
+
+  # Break each guarantee on purpose and require the gate that covers it to FAIL.
+  #
+  # Every test in this repository passes, which is necessary and is not the
+  # interesting question. A test that asserts nothing passes exactly as loudly
+  # as one that asserts everything, and a suite cannot answer that about itself.
+  # This is the only check here whose success condition is a failure.
+  #
+  # It found a real one on its first run: a test that read like a page-wide ban
+  # on ranking language but only ever looked at the page before anything was
+  # signed, where that language could not appear.
+  verify-gates:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+
+      - name: Every gate fails when the thing it checks is broken
+        run: npm run verify:gates

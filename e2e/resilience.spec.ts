@@ -152,8 +152,21 @@ test.describe('the ML-DSA parameter selector', () => {
   }
 
   test('does not present any set as automatically best', async ({ page }) => {
+    // Drives a signature on every set FIRST. The ranking phrase this guards
+    // against only ever appeared in the sign output, so reading `#tab-content`
+    // on first load — which is what this did — could never have seen it.
+    // `scripts/verify-gates.mjs` found that by putting the phrase back and
+    // watching this test stay green.
     await page.goto('.');
-    const text = await page.locator('#tab-content').innerText();
+    let text = await page.locator('#tab-content').innerText();
+    for (const variant of VARIANTS) {
+      await selectVariant(page, variant);
+      await page.locator('#btn-keygen').click();
+      await expect(page.locator('#btn-sign')).toBeEnabled();
+      await page.locator('#btn-sign').click();
+      await expect(page.locator('#sign-output')).toContainText('Signed in');
+      text += `\n${await page.locator('#tab-content').innerText()}`;
+    }
     expect(text).not.toMatch(/prioriti[sz]es security over speed/i);
     expect(text).not.toMatch(/ML-DSA-87 is (the )?(best|strongest|most secure)/i);
     // And it says what should actually drive the choice.
