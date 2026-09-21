@@ -18,15 +18,25 @@ import { cite } from './provenance';
 import { renderImplementationBadge } from './implementation';
 import { fidelityBadge } from './fidelity';
 import { renderSelectorGuidance } from './selector-guidance';
+import { getSelectedVariant, setSelectedVariant } from './selected-variant';
 
-let currentVariant: MLDSAVariant = 'ml-dsa-65';
 let keyPair: MLDSAKeyPair | null = null;
 let lastSignature: Uint8Array | null = null;
 let lastMessage: Uint8Array | null = null;
 let lastSealedDoc: SealedDocument | null = null;
 
+/**
+ * The selected parameter set now lives in `selected-variant.ts` rather than in
+ * a module-local variable here, and this render no longer resets it. A reader
+ * who chose ML-DSA-44, went to Compare and came back used to find themselves on
+ * ML-DSA-65 again with no explanation — and nothing outside this file could
+ * know what was selected, so the benchmark could not mark it and the exported
+ * evidence could not record it.
+ *
+ * Key material is still cleared, because a keypair belongs to exactly one
+ * parameter set and the DOM holding it has just been destroyed.
+ */
 export function renderSignVerify(container: HTMLElement): void {
-  currentVariant = 'ml-dsa-65';
   keyPair = null;
   lastSignature = null;
   lastMessage = null;
@@ -110,10 +120,10 @@ function renderVariantPills(): void {
   const variants: MLDSAVariant[] = ['ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87'];
   variants.forEach((v, i) => {
     const btn = h('button', {
-      className: `pill${v === currentVariant ? ' active' : ''}`,
+      className: `pill${v === getSelectedVariant() ? ' active' : ''}`,
       role: 'radio',
-      'aria-checked': String(v === currentVariant),
-      tabindex: v === currentVariant ? '0' : '-1',
+      'aria-checked': String(v === getSelectedVariant()),
+      tabindex: v === getSelectedVariant() ? '0' : '-1',
     }, v.toUpperCase());
     btn.addEventListener('click', () => selectVariant(v, container));
     container.appendChild(btn);
@@ -135,8 +145,7 @@ function renderVariantPills(): void {
 }
 
 function selectVariant(v: MLDSAVariant, container: HTMLElement): void {
-  const changed = v !== currentVariant;
-  currentVariant = v;
+  const changed = setSelectedVariant(v);
   container.querySelectorAll('.pill').forEach((p) => {
     const isActive = p.textContent === v.toUpperCase();
     p.classList.toggle('active', isActive);
@@ -170,7 +179,7 @@ function resetKeyMaterial(): void {
 
   const keygen = document.getElementById('keygen-output');
   if (keygen) {
-    keygen.innerHTML = `<p class="text-sm text-muted mt-1" id="variant-reset-note">Parameter set is now ${currentVariant.toUpperCase()} — generate a new keypair to use it. Keys and signatures are bound to one parameter set.</p>`;
+    keygen.innerHTML = `<p class="text-sm text-muted mt-1" id="variant-reset-note">Parameter set is now ${getSelectedVariant().toUpperCase()} — generate a new keypair to use it. Keys and signatures are bound to one parameter set.</p>`;
   }
 }
 
@@ -221,7 +230,7 @@ const VARIANT_GUIDANCE: Record<MLDSAVariant, string> = {
 
 function updateParamInfo(): void {
   const info = document.getElementById('param-info')!;
-  const p = ML_DSA_PARAMS[currentVariant];
+  const p = ML_DSA_PARAMS[getSelectedVariant()];
   info.innerHTML = `
     <div class="info-item"><div class="label">Public Key</div><div class="value">${formatBytes(p.publicKey)}</div></div>
     <div class="info-item"><div class="label">Private Key</div><div class="value">${formatBytes(p.privateKey)}</div></div>
@@ -230,7 +239,7 @@ function updateParamInfo(): void {
   `;
 
   const guidance = document.getElementById('variant-guidance');
-  if (guidance) guidance.textContent = VARIANT_GUIDANCE[currentVariant];
+  if (guidance) guidance.textContent = VARIANT_GUIDANCE[getSelectedVariant()];
 }
 
 function bindEvents(): void {
@@ -270,11 +279,11 @@ async function handleKeyGen(): Promise<void> {
   const btn = document.getElementById('btn-keygen') as HTMLButtonElement;
 
   btn.disabled = true;
-  output.innerHTML = `<span class="spinner"></span> Generating ${currentVariant.toUpperCase()} keypair…`;
+  output.innerHTML = `<span class="spinner"></span> Generating ${getSelectedVariant().toUpperCase()} keypair…`;
 
   const start = performance.now();
   try {
-    keyPair = await generateKeyPair(currentVariant);
+    keyPair = await generateKeyPair(getSelectedVariant());
   } catch (err) {
     if (!renderRandomnessFailure(output, err)) throw err;
     btn.disabled = false;
@@ -310,11 +319,11 @@ async function handleSign(): Promise<void> {
   lastMessage = new TextEncoder().encode(msgText);
 
   const output = document.getElementById('sign-output')!;
-  output.innerHTML = `<span class="spinner"></span> Signing with ${currentVariant.toUpperCase()}…`;
+  output.innerHTML = `<span class="spinner"></span> Signing with ${getSelectedVariant().toUpperCase()}…`;
 
   let result;
   try {
-    result = await sign(keyPair.privateKey, lastMessage, currentVariant);
+    result = await sign(keyPair.privateKey, lastMessage, getSelectedVariant());
   } catch (err) {
     // Hedged signing draws a fresh 32-byte rnd per signature, so it depends on
     // the RBG just as keygen does. Stop and say so.
@@ -348,13 +357,13 @@ async function handleVerify(): Promise<void> {
   const output = document.getElementById('verify-output')!;
 
   const start = performance.now();
-  const valid = await verify(keyPair.publicKey, lastMessage, lastSignature, currentVariant);
+  const valid = await verify(keyPair.publicKey, lastMessage, lastSignature, getSelectedVariant());
   const elapsed = (performance.now() - start).toFixed(2);
 
   if (valid) {
     output.innerHTML = `
       <div class="mt-1"><span class="badge badge-pass">✓ VERIFIED</span></div>
-      <p class="text-sm text-muted mt-1">The ${currentVariant.toUpperCase()} signature is valid. The message has not been altered and was signed by the holder of the corresponding private key. Verified in ${elapsed} ms.</p>
+      <p class="text-sm text-muted mt-1">The ${getSelectedVariant().toUpperCase()} signature is valid. The message has not been altered and was signed by the holder of the corresponding private key. Verified in ${elapsed} ms.</p>
     `;
   } else {
     output.innerHTML = `
@@ -389,7 +398,7 @@ async function handleSeal(): Promise<void> {
   const output = document.getElementById('seal-output')!;
   output.innerHTML = `<span class="spinner"></span> Sealing document…`;
 
-  lastSealedDoc = await sealDocument(docText, keyPair.privateKey, keyPair.publicKey, signerName, currentVariant);
+  lastSealedDoc = await sealDocument(docText, keyPair.privateKey, keyPair.publicKey, signerName, getSelectedVariant());
 
   const result = await verifyDocument(lastSealedDoc);
 
@@ -414,7 +423,7 @@ function handleExportSeal(): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `sealed-document-${currentVariant}.json`;
+  a.download = `sealed-document-${getSelectedVariant()}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

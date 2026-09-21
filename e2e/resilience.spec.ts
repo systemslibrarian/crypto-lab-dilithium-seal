@@ -386,3 +386,68 @@ test.describe('discoverability of the assurance material', () => {
     }
   });
 });
+
+test.describe('the selection is one value, shared by the whole demo', () => {
+  test('survives a trip to another tab and back', async ({ page }) => {
+    // It used to be a module-local variable reset on every render: a reader who
+    // chose ML-DSA-44, went to Compare and came back landed on ML-DSA-65 again
+    // with no explanation.
+    await page.goto('.');
+    await selectVariant(page, 'ML-DSA-44');
+    await page.locator('#tab-btn-compare').click();
+    await expect(page.locator('#benchmark-panel')).toBeVisible();
+    await page.locator('#tab-btn-sign-verify').click();
+    await expect(page.locator('#variant-pills .pill[aria-checked="true"]')).toHaveText('ML-DSA-44');
+    // And the values that depend on it came back with it.
+    await expect(page.locator('#param-info')).toContainText(EXPECTED['ML-DSA-44'].sig);
+    await expect(page.locator('#variant-guidance')).toContainText('category 2');
+  });
+
+  test('the benchmark marks the selected set and names it', async ({ page }) => {
+    test.setTimeout(300_000);
+    await page.goto('.');
+    await selectVariant(page, 'ML-DSA-87');
+    await page.locator('#tab-btn-compare').click();
+    await page.locator('#btn-benchmark').click();
+    await expect(page.locator('#bench-results')).toBeVisible({ timeout: 300_000 });
+
+    // Named in words, not signalled by colour alone (WCAG 1.4.1).
+    await expect(page.locator('#bench-selected-note')).toContainText('ML-DSA-87');
+    // Three rows — one per operation — marked, and only for that set.
+    const marked = page.locator('#bench-results tbody tr.bench-selected');
+    await expect(marked).toHaveCount(3);
+    for (const row of await marked.all()) {
+      expect(await row.locator('th').innerText()).toBe('ML-DSA-87');
+    }
+    await expect(page.locator('#bench-sizes tbody tr.bench-selected')).toHaveCount(1);
+  });
+
+  test('the exported evidence records the selection', async ({ page }) => {
+    test.setTimeout(300_000);
+    await page.goto('.');
+    await selectVariant(page, 'ML-DSA-44');
+    await page.locator('#tab-btn-compare').click();
+    await page.locator('#btn-benchmark').click();
+    await expect(page.locator('#bench-results')).toBeVisible({ timeout: 300_000 });
+
+    const grab = async (selector: string): Promise<string> => {
+      const d = await Promise.all([
+        page.waitForEvent('download'),
+        page.locator(selector).click(),
+      ]).then(([event]) => event);
+      const { readFile } = await import('node:fs/promises');
+      return readFile((await d.path())!, 'utf8');
+    };
+
+    const json = JSON.parse(await grab('#btn-bench-json'));
+    expect(json.selectedParameterSet).toBe('ML-DSA-44');
+    // Still measures all three — the comparison is the point.
+    expect(json.results).toHaveLength(3);
+
+    const csv = await grab('#btn-bench-csv');
+    expect(csv.split('\n')[0]).toContain('selectedParameterSet');
+    for (const line of csv.trim().split('\n').slice(1)) {
+      expect(line).toContain('ML-DSA-44');
+    }
+  });
+});

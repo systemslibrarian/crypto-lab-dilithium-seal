@@ -34,6 +34,8 @@ export interface ExportedBenchmark {
     percentileMethod: string;
     note: string;
   };
+  /** Which parameter set the reader had selected when this run was taken. */
+  selectedParameterSet: string;
   environment: BenchmarkRun['environment'];
   /** The classical comparison, measured here — or explicitly not measured. */
   baseline: {
@@ -87,6 +89,7 @@ export function toExport(run: BenchmarkRun): ExportedBenchmark {
       note: COMPARATIVE_ONLY_NOTE,
     },
     environment: run.environment,
+    selectedParameterSet: run.selectedParameterSet.toUpperCase(),
     baseline: {
       name: run.baseline.name,
       supported: run.baseline.supported,
@@ -144,6 +147,7 @@ export const CSV_COLUMNS = [
   'libraryVersion',
   'warmupIterations',
   'measuredIterations',
+  'selectedParameterSet',
   'parameterSet',
   'publicKeyBytes',
   'privateKeyBytes',
@@ -197,6 +201,7 @@ export function toCSV(run: BenchmarkRun): string {
             env.libraryVersion,
             run.warmupIterations,
             run.measuredIterations,
+            run.selectedParameterSet.toUpperCase(),
             result.label,
             result.publicKeyBytes,
             result.privateKeyBytes,

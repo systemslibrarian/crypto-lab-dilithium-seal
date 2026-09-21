@@ -289,8 +289,28 @@ test.describe('exports', () => {
     for (const line of lines.slice(1)) {
       expect(line).toContain('performance.now()');
     }
+    // Count on the parameterSet COLUMN, not a substring of the row: every row
+    // also carries `selectedParameterSet`, so `includes('ML-DSA-65')` matches
+    // all 600 rows regardless of which set the row is about.
+    const fields = (line: string): string[] => {
+      const out: string[] = [];
+      let current = '';
+      let quoted = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') quoted = !quoted;
+        else if (ch === ',' && !quoted) {
+          out.push(current);
+          current = '';
+        } else current += ch;
+      }
+      out.push(current);
+      return out;
+    };
+    const column = fields(lines[0]).indexOf('parameterSet');
+    expect(column).toBeGreaterThan(-1);
     for (const set of ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87', 'Ed25519']) {
-      expect(lines.filter((l) => l.includes(set)), set).toHaveLength(150);
+      expect(lines.slice(1).filter((l) => fields(l)[column] === set), set).toHaveLength(150);
     }
   });
 

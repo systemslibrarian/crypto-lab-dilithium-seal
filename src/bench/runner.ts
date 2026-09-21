@@ -31,6 +31,7 @@
 
 import { generateKeyPair, sign, verify, ML_DSA_PARAMS, type MLDSAVariant } from '../crypto/mldsa';
 import { collectEnvironment, type BenchmarkEnvironment } from './environment';
+import { getSelectedVariant } from '../ui/selected-variant';
 import { summarize, type Summary } from './stats';
 
 export const WARMUP_ITERATIONS = 10;
@@ -76,6 +77,15 @@ export interface BenchmarkRun {
   environment: BenchmarkEnvironment;
   warmupIterations: number;
   measuredIterations: number;
+  /**
+   * The parameter set the reader had selected when the run started.
+   *
+   * Every set is measured regardless — the comparison between them is the
+   * point — but the exported evidence has to record which one the reader was
+   * actually looking at, or a file recovered later cannot be tied back to the
+   * choice that produced it.
+   */
+  selectedParameterSet: MLDSAVariant;
   results: ParameterSetResult[];
   /** The classical comparison, measured here or explicitly marked unsupported. */
   baseline: BaselineResult;
@@ -213,6 +223,7 @@ export async function runBenchmark(options: RunOptions = {}): Promise<BenchmarkR
 
   // Collected BEFORE the run, so the timestamp is when measurement started.
   const environment = collectEnvironment();
+  const selectedParameterSet = getSelectedVariant();
   const results: ParameterSetResult[] = [];
   // Three parameter sets plus the classical baseline, three operations each.
   const total = (VARIANTS.length + 1) * OPERATIONS.length;
@@ -263,5 +274,12 @@ export async function runBenchmark(options: RunOptions = {}): Promise<BenchmarkR
 
   const baseline = await measureBaseline(warmup, measured, yieldFn, options.onProgress, done, total);
 
-  return { environment, warmupIterations: warmup, measuredIterations: measured, results, baseline };
+  return {
+    environment,
+    warmupIterations: warmup,
+    measuredIterations: measured,
+    selectedParameterSet,
+    results,
+    baseline,
+  };
 }

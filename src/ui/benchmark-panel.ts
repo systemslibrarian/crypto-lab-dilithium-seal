@@ -25,6 +25,7 @@ import { COMPARATIVE_ONLY_NOTE, exportFilename, toCSV, toJSON } from '../bench/e
 import { escapeHTML } from './helpers';
 import { fidelityBadge } from './fidelity';
 import { InsecureRandomnessError } from '../crypto/random';
+import { variantLabel } from './selected-variant';
 
 /** The most recent run, so the export buttons have something to write. */
 let lastRun: BenchmarkRun | null = null;
@@ -116,7 +117,7 @@ function resultsTable(run: BenchmarkRun): string {
       result.operations.map((op) => {
         const s = op.summary;
         return `
-        <tr>
+        <tr${result.parameterSet === run.selectedParameterSet ? ' class="bench-selected"' : ''}>
           <th scope="row">${escapeHTML(result.label)}</th>
           <td>${escapeHTML(op.operation)}</td>
           <td class="bench-number">${duration(s.median, resolution)}</td>
@@ -132,6 +133,11 @@ function resultsTable(run: BenchmarkRun): string {
 
   return `
     <h3 class="mt-2">Timings (milliseconds)</h3>
+    <p class="text-sm text-muted" id="bench-selected-note">
+      Every parameter set is measured — the comparison between them is the point — and the rows for
+      your selected set, <strong>${escapeHTML(variantLabel(run.selectedParameterSet))}</strong>, are
+      marked. The exported files record the selection too.
+    </p>
     <table class="comparison-table table-prose" id="bench-results" tabindex="0">
       <caption class="sr-only">
         Measured key generation, signing and verification times for each ML-DSA parameter set,
@@ -240,7 +246,7 @@ function sizesTable(run: BenchmarkRun): string {
   const rows = run.results
     .map(
       (r) => `
-      <tr>
+      <tr${r.parameterSet === run.selectedParameterSet ? ' class="bench-selected"' : ''}>
         <th scope="row">${escapeHTML(r.label)}</th>
         <td class="bench-number">${r.publicKeyBytes.toLocaleString('en-GB')}</td>
         <td class="bench-number">${r.privateKeyBytes.toLocaleString('en-GB')}</td>

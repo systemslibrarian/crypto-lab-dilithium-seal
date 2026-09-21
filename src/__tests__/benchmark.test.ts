@@ -186,6 +186,7 @@ function fakeRun(): BenchmarkRun {
     },
     warmupIterations: 10,
     measuredIterations: 50,
+    selectedParameterSet: 'ml-dsa-65',
     results: [
       {
         parameterSet: 'ml-dsa-65',
@@ -247,6 +248,12 @@ describe('JSON export', () => {
       privateKeyBytes: 4032,
       signatureBytes: 3309,
     });
+  });
+
+  it('records which parameter set the reader had selected', () => {
+    // Every set is measured, so the file is not "about" one of them — but a run
+    // recovered later still has to be tied back to the choice that produced it.
+    expect(exported.selectedParameterSet).toBe('ML-DSA-65');
   });
 
   it('carries the classical baseline, measured or explicitly not', () => {
@@ -335,6 +342,7 @@ describe('CSV export', () => {
     expect(first[at('groupMedianMs')]).toBe(String(summary.median));
     expect(first[at('groupP95Ms')]).toBe(String(summary.p95));
     expect(first[at('parameterSet')]).toBe('ML-DSA-65');
+    expect(first[at('selectedParameterSet')]).toBe('ML-DSA-65');
     expect(first[at('signatureBytes')]).toBe('3309');
     // The baseline rides in the same shape, so filtering on `parameterSet`
     // reaches every measurement in the file.
