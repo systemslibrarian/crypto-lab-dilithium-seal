@@ -9,61 +9,38 @@
 
 import { cite, renderStandardsStatus } from './provenance';
 import { renderImplementationIdentity } from './implementation';
+import { fidelityBadge } from './fidelity';
+import { renderParameterTable } from './parameter-table';
 
 export function renderAbout(container: HTMLElement): void {
   container.innerHTML = `
     <div class="card">
       <h2>About dilithium-seal</h2>
+      ${fidelityBadge('concept', 'about')}
       <p class="text-sm text-muted">A browser-based demonstration of <strong>ML-DSA</strong> — the lattice-based digital signature scheme NIST published as <strong>FIPS 204</strong> in August 2024, standardized from the CRYSTALS-Dilithium submission ${cite('lineage')}. The operations on this page are real ML-DSA; nothing is simulated.</p>
       <p class="text-sm text-muted mt-1">Part of the <a href="https://github.com/systemslibrarian/crypto-compare" target="_blank" rel="noopener">crypto-compare</a> portfolio, completing the NIST PQC trio alongside <strong>kyber-vault</strong> (ML-KEM, FIPS 203) and <strong>sphincs-ledger</strong> (SLH-DSA, FIPS 205).</p>
     </div>
 
     <div class="card">
       <h2>ML-DSA Parameter Reference ${cite('parameters')}</h2>
-      <table class="comparison-table" id="fips204-parameter-table" tabindex="0">
-        <caption class="sr-only">ML-DSA parameter sets from FIPS 204 Table 1: security category, key sizes, signature size, dimensions, and modulus.</caption>
-        <thead>
-          <tr>
-            <th scope="col">Parameter Set</th>
-            <th scope="col">Security Cat.</th>
-            <th scope="col">Public Key</th>
-            <th scope="col">Private Key</th>
-            <th scope="col">Signature</th>
-            <th scope="col">(k, ℓ)</th>
-            <th scope="col">q</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row"><strong>ML-DSA-44</strong></th>
-            <td>2</td>
-            <td>1,312 B</td>
-            <td>2,560 B</td>
-            <td>2,420 B</td>
-            <td>(4, 4)</td>
-            <td>8,380,417</td>
-          </tr>
-          <tr>
-            <th scope="row"><strong>ML-DSA-65</strong></th>
-            <td>3</td>
-            <td>1,952 B</td>
-            <td>4,032 B</td>
-            <td>3,309 B</td>
-            <td>(6, 5)</td>
-            <td>8,380,417</td>
-          </tr>
-          <tr>
-            <th scope="row"><strong>ML-DSA-87</strong></th>
-            <td>5</td>
-            <td>2,592 B</td>
-            <td>4,896 B</td>
-            <td>4,627 B</td>
-            <td>(8, 7)</td>
-            <td>8,380,417</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="text-sm text-muted mt-1">Sizes from FIPS 204 Table 2 ${cite('sizes')}; dimensions and modulus from Table 1 ${cite('parameters')}; security categories from §4 ${cite('categories')}. All sizes in bytes. q = 2²³ − 2¹³ + 1.</p>
+      ${fidelityBadge('values', 'parameter-table')}
+      <p class="text-sm text-muted mb-1">
+        The complete parameter set for all three profiles, transcribed from FIPS 204. Every size in
+        the last three rows is <em>recomputed</em> from the rows above it using the standard's own
+        formulas, and checked against the byte counts this page actually produces — so a mistyped
+        parameter here cannot pass unnoticed.
+      </p>
+      ${renderParameterTable()}
+      <p class="text-sm text-muted mt-1">
+        Sizes ${cite('sizes')}; parameters ${cite('parameters')}; security categories ${cite('categories')};
+        the ring ℤq[X]/(X²⁵⁶+1) from §2.3. q = 2²³ − 2¹³ + 1 = 8,380,417.
+      </p>
+      <p class="text-sm text-muted mt-1">
+        <strong>Repetitions</strong> is the one row with a pending correction: NIST's errata
+        spreadsheet records the published figures as "not quite accurate" and gives 4.36, 5.14 and
+        3.91. Both are shown because neither alone is the whole truth — the first is what the
+        standard says today, the second is what it will say. ${cite('repetitions')}
+      </p>
     </div>
 
     ${renderStandardsStatus()}

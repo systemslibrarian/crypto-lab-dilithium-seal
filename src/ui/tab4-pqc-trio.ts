@@ -4,6 +4,7 @@
  */
 
 import { cite } from './provenance';
+import { fidelityBadge } from './fidelity';
 
 const CRYPTO_COMPARE_BASE = 'https://github.com/systemslibrarian/crypto-compare';
 
@@ -36,6 +37,7 @@ export function renderPQCTrio(container: HTMLElement): void {
 
     <div class="card">
       <h2>A Complete Post-Quantum System</h2>
+      ${fidelityBadge('concept', 'workflow')}
       <p class="text-sm text-muted mb-1">How all three standards work together for authenticated, confidential, post-quantum secure communication.</p>
 
       <div class="workflow">
@@ -78,6 +80,7 @@ export function renderPQCTrio(container: HTMLElement): void {
 
     <div class="card">
       <h2>NIST PQC Timeline</h2>
+      ${fidelityBadge('concept', 'timeline')}
       <div class="timeline">
         <div class="tl-item"><span class="tl-year">2016</span> — NIST announces Post-Quantum Cryptography standardization process</div>
         <div class="tl-item"><span class="tl-year">2017</span> — First round: 69 submissions received, including CRYSTALS-Dilithium</div>

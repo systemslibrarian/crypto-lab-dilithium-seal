@@ -75,6 +75,57 @@ Drafts are labelled as drafts. NIST IR 8547, the transition-timeline document,
 is still an **Initial Public Draft**, and the page says so wherever its dates
 appear.
 
+## Real ML-DSA vs the Teaching Models
+
+Every panel carries one of four labels, stated in words next to the panel:
+
+| Label | Meaning |
+|---|---|
+| **Real FIPS 204 operation** | Runs the actual algorithm on real key material |
+| **Real values, visualized** | Numbers measured from a real operation or transcribed from FIPS 204 |
+| **Reduced educational model — not the real signer** | Toy parameters, simplified structure |
+| **Conceptual — executes no ML-DSA internals** | A diagram or walkthrough |
+
+The label is rendered **before** the panel it labels, so it is seen and read
+first; a browser test asserts that DOM ordering.
+
+### What the audit found
+
+- **The Module-LWE panel carried no caveat at all.** It opened *"ML-DSA's public
+  key is t = A·s + e"* and then showed a 3×3 integer system modulo 97 with a
+  hand-picked secret and a fixed error pattern. It now states that its numbers
+  are invented for legibility and gives the real scale — a 6×5 module of
+  256-coefficient polynomials modulo 8,380,417, roughly **7,680 secret
+  coefficients rather than three** — and says plainly that nothing in it is
+  evidence about the real problem's hardness.
+- **The Fiat-Shamir panel's caveat was one grey line below its controls.** It now
+  carries a model label above it and a **toy-vs-real parameter table** beside it,
+  so the gap is a number rather than the word "illustrative".
+- **The panel is not actually Fiat-Shamir.** It samples the challenge at random
+  instead of hashing μ ‖ w₁, which makes it the *interactive* proof that
+  Fiat-Shamir converts. The page now says so, and the comparison table lists what
+  the model does not represent at all (hint, public key t, verification).
+
+### The complete parameter table
+
+The About tab previously showed seven columns — the three sizes, the category,
+(k, ℓ) and q. Enough to look authoritative; not enough to check anything. It now
+carries all nineteen rows of FIPS 204 Table 1 and Table 2: ring dimension,
+modulus, ζ, d, (k, ℓ), η, τ, λ, γ₁, γ₂, β, the rejection bound, ω, challenge
+entropy, repetitions, security category and all three sizes.
+
+The values are verified **three independent ways**, because re-reading a
+transcription makes the same mistake twice:
+
+1. **Internally** — β must equal τ·η, γ₂ must be the stated fraction of q−1, q
+   must be 2²³ − 2¹³ + 1, and ζ must really be a 512th root of unity mod q.
+2. **Against the standard's own formulas** — FIPS 204 gives the byte lengths
+   algebraically in the Input/Output lines of Algorithms 1–3, so all nine sizes
+   are *recomputed* from the parameters. A single mistyped parameter breaks at
+   least one size.
+3. **Against the running implementation**, which must emit exactly those byte
+   counts.
+
 ## Runtime and Implementation Assurances
 
 The page states exactly what is executing, and every value is derived from

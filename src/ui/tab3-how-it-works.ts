@@ -9,6 +9,7 @@
 
 import { renderFiatShamir, renderModuleLWE } from './viz-render';
 import { cite } from './provenance';
+import { fidelityBadge, fidelityLegend } from './fidelity';
 import { FIPS_204_EDITION, formatDate } from '../data/sources';
 
 interface StepInfo {
@@ -149,6 +150,7 @@ export function renderHowItWorks(container: HTMLElement): void {
   container.innerHTML = `
     <div class="card intuition-card">
       <h2>Start here: the one-sentence idea</h2>
+      ${fidelityBadge('concept', 'intuition')}
       <p class="intuition-lead">
         A signature is a way to <strong>prove you know a secret</strong> without ever showing it.
       </p>
@@ -179,8 +181,11 @@ export function renderHowItWorks(container: HTMLElement): void {
       </p>
     </div>
 
+    ${fidelityLegend()}
+
     <div class="card">
       <h2>How ML-DSA Works</h2>
+      ${fidelityBadge('concept', 'stepper')}
       <p class="text-sm text-muted mb-1">A five-step walkthrough of the Module-LWE + Module-SIS mathematical foundation. Click or press Enter on each step to expand. Steps 3 and 5 are interactive.</p>
       <div class="stepper" id="stepper"></div>
     </div>

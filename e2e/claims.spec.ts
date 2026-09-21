@@ -46,44 +46,86 @@ interface Table1Row {
   privateKey: number;
   signature: number;
   category: number;
-  /** The (k, ℓ) module dimensions column. */
+  /** Module dimensions (k, ℓ) of the matrix A. */
   k: number;
   l: number;
   q: number;
+  n: number;
+  d: number;
+  eta: number;
+  tau: number;
+  lambda: number;
+  omega: number;
+  beta: number;
+  gamma1: number;
+  gamma2: number;
+  rejectBound: number;
+  /** "4.25 (errata: 4.36)" — kept raw so the test can assert both halves. */
+  repetitions: string;
 }
 
-/** FIPS 204 Table 1 as the About tab renders it: {'ML-DSA-65': {publicKey, ...}}. */
+/**
+ * The FIPS 204 parameter table from the About tab, keyed by parameter set.
+ *
+ * The table is TRANSPOSED relative to the one this suite first read: it now
+ * carries nineteen parameters, which only fit as rows, so the three parameter
+ * sets are the columns. The previous seven-column layout listed the sizes, the
+ * category, (k, ℓ) and q and nothing else — enough to look authoritative and
+ * not enough to check anything, since it omitted every parameter that makes
+ * ML-DSA the scheme it is.
+ */
 async function readTable1(page: Page): Promise<Record<Variant, Table1Row>> {
   await page.locator('#tab-btn-about').click();
-  await expect(page.locator('#tab-content')).toContainText('FIPS 204 Table 1');
-  // Addressed by id, not by "the table on the About tab". The About tab now
-  // also carries the standards-status, lineage, claims and sources tables; a
-  // positional selector silently began reading rows out of those, and the
-  // claims table has no row header at all, so it failed on a null `th` rather
-  // than on a wrong number.
+  await expect(page.locator('#fips204-parameter-table')).toBeVisible();
+
   const rows = await page
     .locator('#fips204-parameter-table tbody tr')
     .evaluateAll((trs) =>
       trs.map((tr) => ({
-        name: (tr.querySelector('th') as HTMLElement).innerText.trim(),
+        label: (tr.querySelector('th') as HTMLElement).innerText.trim(),
         cells: Array.from(tr.querySelectorAll('td')).map((td) => (td as HTMLElement).innerText.trim()),
       })),
     );
+
+  const cellsFor = (prefix: string): string[] => {
+    const row = rows.find((r) => r.label.startsWith(prefix));
+    expect(row, `parameter table row starting "${prefix}"`).toBeTruthy();
+    expect(row!.cells, `row "${prefix}" must have one column per parameter set`).toHaveLength(3);
+    return row!.cells;
+  };
+  /** Last number in the cell: "2¹⁷ = 131,072" and "(q−1)/88 = 95,232" both end in the value. */
+  const value = (cell: string): number => num(cell.match(/[\d,]+(?!.*[\d,])/)![0]);
+
+  const sets: Variant[] = ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87'];
+  const headers = await page
+    .locator('#fips204-parameter-table thead th')
+    .evaluateAll((ths) => ths.map((th) => (th as HTMLElement).innerText.trim()));
+  expect(headers.slice(1), 'parameter table columns').toEqual(sets);
+
   const table = {} as Record<Variant, Table1Row>;
-  for (const row of rows) {
-    // "(6, 5)" → k = 6, ℓ = 5.
-    const dims = row.cells[4].match(/-?\d+/g)!.map(Number);
-    table[row.name as Variant] = {
-      category: num(row.cells[0]),
-      publicKey: num(row.cells[1]),
-      privateKey: num(row.cells[2]),
-      signature: num(row.cells[3]),
+  sets.forEach((variant, i) => {
+    const dims = cellsFor('Module dimensions')[i].match(/-?\d+/g)!.map(Number);
+    table[variant] = {
+      n: value(cellsFor('Ring dimension')[i]),
+      q: value(cellsFor('Modulus')[i]),
+      d: value(cellsFor('Dropped bits')[i]),
       k: dims[0],
       l: dims[1],
-      q: num(row.cells[5]),
+      eta: value(cellsFor('Private-key coefficient range')[i]),
+      tau: value(cellsFor('Challenge weight')[i]),
+      lambda: value(cellsFor('Collision strength')[i]),
+      gamma1: value(cellsFor('Mask coefficient range')[i]),
+      gamma2: value(cellsFor('Low-order rounding range')[i]),
+      beta: value(cellsFor('Rejection shift bound')[i]),
+      rejectBound: value(cellsFor('Rejection bound on z')[i]),
+      omega: value(cellsFor('Maximum 1s in the hint')[i]),
+      repetitions: cellsFor('Expected signing repetitions')[i],
+      category: value(cellsFor('NIST security category')[i]),
+      publicKey: value(cellsFor('Public key (bytes)')[i]),
+      privateKey: value(cellsFor('Private key (bytes)')[i]),
+      signature: value(cellsFor('Signature (bytes)')[i]),
     };
-  }
-  for (const variant of VARIANTS) expect(table[variant], `Table 1 row for ${variant}`).toBeTruthy();
+  });
   return table;
 }
 
@@ -568,40 +610,71 @@ test('every seal verdict agrees with the two signals printed beneath it', async 
   expect(errors).toEqual([]);
 });
 
-test('FIPS 204 Table 1 is internally consistent with its own dimensions column', async ({
+test('the FIPS 204 parameter table is internally consistent with its own parameters', async ({
   page,
 }) => {
   test.setTimeout(60_000);
   await page.goto('.');
-  const table1 = await readTable1(page);
+  const table = await readTable1(page);
 
-  // The About tab prints "q = 2²³ − 2¹³ + 1" beneath the table; the q column
-  // must be that number.
   const expectedQ = 2 ** 23 - 2 ** 13 + 1;
   await expect(page.locator('#tab-content')).toContainText('q = 2²³ − 2¹³ + 1');
+
   for (const variant of VARIANTS) {
-    expect(table1[variant].q, `${variant} modulus q`).toBe(expectedQ);
-    // FIPS 204: pk = 32-byte seed ρ + k packed t₁ polynomials at 320 B each.
-    // The public key column must follow from the (k, ℓ) column in the same row.
-    expect(
-      table1[variant].publicKey,
-      `${variant}: public key must be 32 + k·320 for the k its own row prints`,
-    ).toBe(32 + table1[variant].k * 320);
+    const row = table[variant];
+    expect(row.q, `${variant} modulus q`).toBe(expectedQ);
+    expect(row.n, `${variant} ring dimension`).toBe(256);
+    expect(row.d, `${variant} dropped bits d`).toBe(13);
+
+    // Each of these makes one printed value follow from others in the same
+    // column, so a single mistyped parameter breaks at least one of them.
+
+    // FIPS 204: pk = 32-byte seed ρ + k packed t₁ polynomials of 32·(bitlen(q−1)−d) bytes.
+    expect(row.publicKey, `${variant} pk = 32 + 32·k·(bitlen(q−1) − d)`).toBe(
+      32 + 32 * row.k * (row.q.toString(2).length - row.d),
+    );
+    // sk = ρ + K + tr + packed s₁, s₂ and t₀.
+    const bitlen = (x: number): number => x.toString(2).length;
+    expect(row.privateKey, `${variant} sk from its own η, k and ℓ`).toBe(
+      32 + 32 + 64 + 32 * ((row.l + row.k) * bitlen(2 * row.eta) + row.d * row.k),
+    );
+    // σ = c̃ (λ/4 bytes) + packed z + hint (ω + k bytes).
+    expect(row.signature, `${variant} σ from its own λ, ℓ, γ₁, ω and k`).toBe(
+      row.lambda / 4 + row.l * 32 * (1 + bitlen(row.gamma1 - 1)) + row.omega + row.k,
+    );
+    // β is defined as τ·η, and the rejection bound as γ₁ − β.
+    expect(row.beta, `${variant}: β must equal τ·η`).toBe(row.tau * row.eta);
+    expect(row.rejectBound, `${variant}: the printed bound must be γ₁ − β`).toBe(
+      row.gamma1 - row.beta,
+    );
+    // γ₂ is a stated fraction of q−1: (q−1)/88 for ML-DSA-44, (q−1)/32 otherwise.
+    expect(row.gamma2, `${variant} γ₂ divides q−1`).toBe(
+      (row.q - 1) / (variant === 'ML-DSA-44' ? 88 : 32),
+    );
+
+    // The repetitions row must show BOTH the published figure and the pending
+    // erratum — either alone misleads in one direction.
+    expect(row.repetitions, `${variant} repetitions`).toMatch(/^[\d.]+ \(errata: [\d.]+\)$/);
   }
 
-  // Sizes and security categories must rise together across the three sets —
-  // the page's whole "parameter-set tradeoff" story.
+  // Sizes and security categories rise together across the three sets — the
+  // page's whole "parameter-set tradeoff" story.
   for (const [smaller, larger] of [
     ['ML-DSA-44', 'ML-DSA-65'],
     ['ML-DSA-65', 'ML-DSA-87'],
   ] as const) {
     for (const field of ['category', 'publicKey', 'privateKey', 'signature', 'k', 'l'] as const) {
       expect(
-        table1[larger][field],
+        table[larger][field],
         `${field} must increase from ${smaller} to ${larger}`,
-      ).toBeGreaterThan(table1[smaller][field]);
+      ).toBeGreaterThan(table[smaller][field]);
     }
   }
+
+  // λ, the collision strength of c̃, is what fixes |c̃| and rises with the category.
+  expect(table['ML-DSA-44'].lambda).toBe(128);
+  expect(table['ML-DSA-65'].lambda).toBe(192);
+  expect(table['ML-DSA-87'].lambda).toBe(256);
 });
 
 for (const variant of VARIANTS) {
@@ -791,10 +864,9 @@ test.describe('interactive visualizations', () => {
     await page.locator('#step-btn-2').click();
 
     const scale = await page.locator('.fs-scale').innerText();
-    const bound = num(scale.match(/reject bound γ₁−β=(\d+)/)![1]);
-    const gamma1 = num(scale.match(/γ₁=(\d+)/)![1]);
-    const beta = num(scale.match(/β=(\d+)/)![1]);
-    const coeffs = num(scale.match(/N=(\d+) coeffs/)![1]);
+    const bound = num(scale.match(/γ₁−β = \d+−\d+ = (\d+)/)![1]);
+    const gamma1 = num(scale.match(/γ₁−β = (\d+)−/)![1]);
+    const beta = num(scale.match(/γ₁−β = \d+−(\d+)/)![1]);
     const tau = num(scale.match(/τ=(\d+)/)![1]);
     const eta = num(scale.match(/η=(\d+)/)![1]);
     // The bound the page prints must be the bound its own parameters imply.
@@ -803,6 +875,17 @@ test.describe('interactive visualizations', () => {
     // parameters must satisfy that relation, or the reject bound is arbitrary.
     expect(beta, 'β must equal τ·η, the worst-case shift the page claims it bounds').toBe(
       tau * eta,
+    );
+
+    // The toy-vs-real table beside it must state the real ML-DSA-65 values,
+    // not a second set of invented ones: the whole point of putting the two
+    // columns side by side is that the right-hand one is the standard's.
+    const scaleTable = await page.locator('.fs-scale-table').innerText();
+    expect(scaleTable).toContain('8,380,417');
+    expect(scaleTable).toContain('256');
+    expect(scaleTable).toContain('(6, 5)');
+    const coeffs = num(
+      (await page.locator('.fs-scale-table tbody tr').first().locator('td').first().innerText()),
     );
 
     await page.locator('#fs-run').click();
