@@ -10,7 +10,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // Browser code only. `types: []` keeps @types/node OUT of this pass, so a
+    // Node-only API that crept into shipped code (readFileSync, process.env,
+    // Buffer) is a compile error here even though the test pass can use them.
+    "types": []
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/__tests__"]
 }
