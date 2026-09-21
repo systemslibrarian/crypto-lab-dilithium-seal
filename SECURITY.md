@@ -67,7 +67,37 @@ These are enforced by CI, not by intention. Each has a test that fails the build
 | No `Math.random` in the cryptographic path | `src/__tests__/runtime.test.ts` |
 | Key generation and signing stop if the RBG is unavailable | `src/crypto/random.ts`, tested in both unit and browser suites |
 | Malformed keys and signatures are rejected, never accepted | `src/__tests__/malformed-inputs.test.ts` |
-| Interoperability with NIST's own ACVP vectors | `src/__tests__/acvp-conformance.test.ts` |
+| Interoperability with NIST's own ACVP vectors | `src/__tests__/acvp-conformance.test.ts` (subset, per merge) and `scripts/full-acvp.mjs` (all 615, weekly) |
+| The build is byte-reproducible | CI builds twice from a clean tree and diffs the SHA-256 manifests |
+| Published bytes carry SLSA provenance | `actions/attest-build-provenance`, verifiable with `gh attestation verify` |
+| What is live is what was built | `scripts/verify-deployment.mjs`, after every publish |
+
+## Verifying a published build yourself
+
+The build is byte-reproducible, so you do not have to take the published bundle
+on trust:
+
+```bash
+git clone https://github.com/systemslibrarian/crypto-lab-dilithium-seal
+cd crypto-lab-dilithium-seal
+git checkout <the commit you want to check>
+npm ci && npm run build
+npm run hash:dist          # SHA-256 of every file in dist/
+
+# Compare against what CI produced (the `dist-sha256` artifact on that run),
+# or against the live site directly:
+npm run verify:deployment -- https://systemslibrarian.github.io/crypto-lab-dilithium-seal/
+```
+
+`verify:deployment` fetches the live page and every asset it references, hashes
+them against your local build, and then drives a real key generation, signature,
+verification and tamper-rejection in a browser against the deployed bytes.
+
+GitHub also holds a signed SLSA provenance attestation for each published build:
+
+```bash
+gh attestation verify dist/assets/<file> --repo systemslibrarian/crypto-lab-dilithium-seal
+```
 
 ## What this project does not claim
 

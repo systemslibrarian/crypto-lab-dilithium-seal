@@ -113,7 +113,10 @@ is not a validation.
 | 9.1 | Zero moderate/high/critical advisories, and CI **fails closed** | `npm audit` | Its own CI job, in `needs:` for deploy and auto-merge; `supply-chain.test.ts` asserts the wiring | Only covers advisories that have been *published* |
 | 9.2 | Every GitHub Action pinned to an immutable commit SHA | — | `check-action-pins.mjs` in CI; `supply-chain-scripts.test.ts` tests each rejection case and that the rule is not vacuous | The checker validates format, not that the SHA is the release it claims |
 | 9.3 | A CycloneDX 1.6 SBOM is produced for every build | CycloneDX spec | `supply-chain-scripts.test.ts` — structure, scopes, hashes, purls, determinism | Describes the npm tree, not the Actions or runner image |
-| 9.4 | `npm ci` is clean and reproducible | — | Every CI job; `supply-chain.test.ts` requires an integrity hash on every resolved entry | No reproducible-build attestation; the published bundle is unsigned |
+| 9.4 | `npm ci` is clean and reproducible | — | Every CI job; `supply-chain.test.ts` requires an integrity hash on every resolved entry | — |
+| 9.4a | The **build** is byte-reproducible | — | CI builds twice from a clean tree and diffs SHA-256 manifests; `supply-chain-scripts.test.ts` checks the manifest is sorted, slash-normalised and stable | Reproducible on the pinned Node and runner; not tested across platforms |
+| 9.4b | Published bytes carry **SLSA provenance** | SLSA v1 | `actions/attest-build-provenance` on push to main; a test requires it be skipped on pull requests | Attests the bytes to a workflow run. It does not make the source trustworthy — only traceable |
+| 9.4c | **What is live is what was built**, and it works | — | `scripts/verify-deployment.mjs` after every publish: every referenced asset hashed against a fresh build, then keygen/sign/verify/tamper driven in a real browser | Runs after publication, so it detects a bad deploy rather than preventing one |
 | 9.5 | Node 22 and `ubuntu-24.04`, from single sources | — | `supply-chain-scripts.test.ts` — no literal `node-version:`, no `-latest` runner | — |
 | 9.6 | Lighthouse: performance ≥ 0.90, **accessibility 1.00**, best-practices ≥ 0.90, SEO ≥ 0.90 over three runs | — | `scripts/lighthouse.mjs` in CI, median for timing categories and **worst run** for accessibility | **Performance sits exactly at its budget on CI hardware** (0.84/0.90/0.90). A slower runner would fail it |
 | 9.7 | No WCAG A/AA violations in either theme at either width | WCAG 2.1 | `a11y.spec.ts` drives every state through axe in 4 combinations, plus arithmetic contrast, reflow and keyboard-reachability oracles | axe finds a subset of WCAG issues; `label-content-name-mismatch` had to be enabled by hand after Lighthouse found a real 2.5.3 failure |
@@ -127,7 +130,7 @@ is not a validation.
 
 1. **No independent audit** of the cryptographic implementation, and none of this repository's code.
 2. **No CMVP or FIPS 140 validation.**
-3. **No reproducible-build attestation** and no signature on the published bundle.
+3. ~~No reproducible-build attestation.~~ **Closed** — the build is byte-reproducible (enforced), carries SLSA provenance, and the live site is hash-compared against a fresh build after every publish. The bundle itself is still not signed for the browser to check, because a static page cannot verify its own signature before running.
 4. **No constant-time guarantee**, and no way to obtain one in JavaScript. The page now *measures* the resulting variability against a control rather than only asserting it.
 5. **No protection against a compromised host page or extension.**
 6. **No identity binding** — by design, stated wherever it could mislead, and now *demonstrated* by a control that forges a package which verifies perfectly.

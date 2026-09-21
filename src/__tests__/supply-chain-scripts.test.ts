@@ -7,12 +7,14 @@
  * against the repository's own currently-clean state.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { checkWorkflowText, findWorkflowFiles } from '../../scripts/check-action-pins.mjs';
 import { buildSbom, integrityToHash, purlFor } from '../../scripts/generate-sbom.mjs';
+import { manifestFor } from '../../scripts/hash-dist.mjs';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const read = (p: string): string => readFileSync(join(ROOT, p), 'utf8');
@@ -243,5 +245,89 @@ describe('Node version and runner family are exact', () => {
       expect(runner, 'runner image').toBe('ubuntu-24.04');
       expect(runner).not.toContain('latest');
     }
+  });
+});
+
+describe('build reproducibility and deployment verification', () => {
+  /**
+   * A fixture tree, not `dist/`.
+   *
+   * The first version of these tests read `dist/` — and `npm test` runs BEFORE
+   * `npm run build` in CI, so they passed locally off a stale build and failed
+   * the moment CI looked. That is the same defect this repository already fixed
+   * once, in the no-WebAssembly check, and the same lesson: a test that depends
+   * on an artifact it does not produce is a coin toss about whether someone
+   * built recently. The rule under test is pure, so it gets a tree of its own.
+   */
+  const fixture = mkdtempSync(join(tmpdir(), 'hash-dist-'));
+  mkdirSync(join(fixture, 'assets'), { recursive: true });
+  writeFileSync(join(fixture, 'index.html'), '<!doctype html>');
+  writeFileSync(join(fixture, 'assets', 'b.css'), 'body{}');
+  writeFileSync(join(fixture, 'assets', 'a.js'), 'export default 1;');
+
+  it('hashes a tree deterministically, sorted, with no timestamps', () => {
+    const manifest = manifestFor(fixture);
+    const lines = manifest.split('\n');
+    expect(lines).toHaveLength(3);
+    for (const line of lines) {
+      expect(line).toMatch(/^[0-9a-f]{64} {2}\S+$/);
+    }
+    // Sorted, so two identical builds produce identical manifests regardless
+    // of the order the filesystem happened to hand the files back.
+    expect([...lines].sort()).toEqual(lines);
+    // Byte-for-byte stable across calls.
+    expect(manifestFor(fixture)).toBe(manifest);
+  });
+
+  it('changes when a single byte of a single file changes', () => {
+    const before = manifestFor(fixture);
+    writeFileSync(join(fixture, 'assets', 'a.js'), 'export default 2;');
+    const after = manifestFor(fixture);
+    expect(after).not.toBe(before);
+    // Compared as SETS, not by position: lines sort by "<hash>  <path>", so a
+    // changed hash moves its own line and shifts the ones around it.
+    const removed = before.split('\n').filter((l) => !after.includes(l));
+    const added = after.split('\n').filter((l) => !before.includes(l));
+    expect(removed).toHaveLength(1);
+    expect(added).toHaveLength(1);
+    expect(removed[0]).toContain('assets/a.js');
+    expect(added[0]).toContain('assets/a.js');
+    writeFileSync(join(fixture, 'assets', 'a.js'), 'export default 1;');
+  });
+
+  it('uses forward slashes, so a Windows manifest matches a Linux one', () => {
+    expect(manifestFor(fixture)).not.toMatch(/\\/);
+    expect(manifestFor(fixture)).toContain('assets/a.js');
+  });
+
+  it('CI builds twice and requires the bytes to match', () => {
+    const workflow = read('.github/workflows/deploy.yml');
+    expect(workflow).toContain('The build is reproducible');
+    expect(workflow).toMatch(/hash-dist\.mjs > \/tmp\/first\.sha256/);
+    expect(workflow).toMatch(/hash-dist\.mjs > \/tmp\/second\.sha256/);
+    expect(workflow).toMatch(/diff -u \/tmp\/first\.sha256 \/tmp\/second\.sha256/);
+  });
+
+  it('attests build provenance, and only for something that will be published', () => {
+    const workflow = read('.github/workflows/deploy.yml');
+    expect(workflow).toContain('actions/attest-build-provenance@');
+    // A pull-request run has no business minting an attestation for bytes that
+    // are not going to be published.
+    const attestBlock = workflow.slice(
+      workflow.indexOf('Attest build provenance') - 200,
+      workflow.indexOf('actions/attest-build-provenance@')
+    );
+    expect(attestBlock).toContain("if: github.event_name != 'pull_request'");
+    expect(workflow).toContain('attestations: write');
+  });
+
+  it('verifies the deployment after publishing, not before', () => {
+    const workflow = read('.github/workflows/deploy.yml');
+    const job = workflow.slice(workflow.indexOf('  verify-deployment:'));
+    expect(job).toContain('needs: deploy');
+    expect(job).toContain('npm run verify:deployment');
+    // It must run against the URL deploy actually published.
+    expect(job).toContain('needs.deploy.outputs.page_url');
+    expect(workflow).toContain('page_url: ${{ steps.deployment.outputs.page_url }}');
   });
 });
