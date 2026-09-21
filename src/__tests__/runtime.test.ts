@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RUNTIME_FACTS, LIMITATIONS } from '../data/runtime';
 import { isAfter } from '../../build/runtime-facts';
+import { findWasmEvidence } from '../../build/purity';
 import {
   InsecureRandomnessError,
   requireSecureRandomness,
@@ -110,16 +111,29 @@ describe('audit and validation status', () => {
     expect(RUNTIME_FACTS.validation.statement).toMatch(/is not a validation/);
   });
 
-  it('is honest about the implementation type, and the bundle agrees', () => {
+  it('is honest about the implementation type', () => {
     expect(RUNTIME_FACTS.implementationType).toBe('javascript');
-    // "Pure JavaScript, no WebAssembly" is checkable, so check it: no .wasm
-    // asset is emitted and nothing calls the WebAssembly API.
-    const assets = readdirSync(join(ROOT, 'dist', 'assets'));
-    expect(assets.filter((f) => f.endsWith('.wasm'))).toEqual([]);
-    for (const file of assets.filter((f) => f.endsWith('.js'))) {
-      const js = read(join('dist', 'assets', file));
-      expect(js, file).not.toMatch(/WebAssembly\s*\.\s*(instantiate|compile|Module|Instance)/);
-    }
+  });
+
+  it('enforces the purity claim against the real bundle, at build time', () => {
+    // This assertion used to read `dist/assets` from here. It passed locally
+    // off a stale build and failed in CI, where `npm test` runs BEFORE
+    // `npm run build` and `dist/` does not exist — a test depending on an
+    // artifact it does not produce is a coin toss about whether someone built
+    // recently. The check now lives in a Vite plugin that inspects the bundle
+    // it is emitting, so it cannot be skipped or run against the wrong build.
+    // What is unit-tested here is the rule itself, which is pure.
+    expect(findWasmEvidence([{ name: 'index.js', source: 'const a = 1;' }])).toEqual([]);
+    // The word alone is not evidence — this project's own UI says
+    // "no WebAssembly or native code", and that must not trip the rule.
+    expect(
+      findWasmEvidence([{ name: 'index.js', source: '"pure JS, no WebAssembly or native code"' }])
+    ).toEqual([]);
+    // Actual instantiation is.
+    expect(findWasmEvidence([{ name: 'a.js', source: 'WebAssembly.instantiate(b)' }])).toHaveLength(1);
+    expect(findWasmEvidence([{ name: 'a.js', source: 'new WebAssembly.Module(b)' }])).toHaveLength(1);
+    expect(findWasmEvidence([{ name: 'x.wasm', source: '' }])).toHaveLength(1);
+    expect(findWasmEvidence([{ name: 'a.js', source: 'process.dlopen(m, p)' }])).toHaveLength(1);
   });
 });
 

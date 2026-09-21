@@ -85,7 +85,7 @@ a fact about anything that shipped.
 | | |
 |---|---|
 | Library | `@noble/post-quantum`, exact version + npm integrity hash |
-| Implementation | Pure JavaScript — no WebAssembly, no native module |
+| Implementation | Pure JavaScript — no WebAssembly, no native module (**enforced at build time**) |
 | Randomness | `crypto.getRandomValues` (Web Crypto API), **no fallback** |
 | Hashing inside the crypto path | `@noble/hashes` (SHAKE128/256), version + integrity hash |
 | Independent security audit | **None.** The library states "has not been independently audited yet" |
@@ -95,6 +95,12 @@ a fact about anything that shipped.
 The audit claim is pinned by a test that reads the library's own README, so if
 it is ever independently audited the suite fails and a human updates the claim
 rather than the page silently under- or over-stating the assurance.
+
+The "pure JavaScript" claim is enforced by a Vite plugin (`build/purity.ts`)
+that inspects the bundle it is emitting and **fails the build** if a `.wasm`
+asset appears or anything calls `WebAssembly.instantiate`/`compile`/`Module` or
+a native addon loader. It distinguishes the API call from the word: the page's
+own sentence saying there is no WebAssembly must not trip it.
 
 ### Fails closed on randomness
 
