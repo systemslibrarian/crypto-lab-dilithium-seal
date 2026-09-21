@@ -12,8 +12,10 @@ import {
   type MLDSAKeyPair,
 } from '../crypto/mldsa';
 import { sealDocument, verifyDocument, type SealedDocument } from '../crypto/seal';
+import { InsecureRandomnessError } from '../crypto/random';
 import { truncateHex, formatBytes, h, escapeHTML } from './helpers';
 import { cite } from './provenance';
+import { renderImplementationBadge } from './implementation';
 
 let currentVariant: MLDSAVariant = 'ml-dsa-65';
 let keyPair: MLDSAKeyPair | null = null;
@@ -46,6 +48,7 @@ export function renderSignVerify(container: HTMLElement): void {
 
       <div class="section">
         <div class="section-title">Key Generation</div>
+        ${renderImplementationBadge()}
         <button class="btn" id="btn-keygen">Generate Keypair</button>
         <div id="keygen-output" aria-live="polite"></div>
       </div>
@@ -212,6 +215,26 @@ function bindEvents(): void {
   document.getElementById('btn-verify-seal')!.addEventListener('click', handleVerifySealJSON);
 }
 
+/**
+ * Render a fail-closed randomness error where the reader is looking.
+ *
+ * Before this, `generateKeyPair` threw out of an async click handler with
+ * nothing catching it: the spinner stayed on screen forever and the console got
+ * an unhandled rejection the reader never sees. An operation that refuses to
+ * proceed has to SAY it refused, or it is indistinguishable from one that hung.
+ */
+function renderRandomnessFailure(output: HTMLElement, err: unknown): boolean {
+  if (!(err instanceof InsecureRandomnessError)) return false;
+  output.innerHTML = `
+    <div class="mt-1"><span class="badge badge-fail">✗ STOPPED — NO SECURE RANDOMNESS</span></div>
+    <p class="text-sm text-red mt-1">${escapeHTML(err.message)}</p>
+    <p class="text-sm text-muted">Nothing was generated or signed. There is deliberately no
+    fallback: a key drawn from a non-cryptographic source would look identical and be
+    worthless.</p>
+  `;
+  return true;
+}
+
 async function handleKeyGen(): Promise<void> {
   const output = document.getElementById('keygen-output')!;
   const btn = document.getElementById('btn-keygen') as HTMLButtonElement;
@@ -220,7 +243,13 @@ async function handleKeyGen(): Promise<void> {
   output.innerHTML = `<span class="spinner"></span> Generating ${currentVariant.toUpperCase()} keypair…`;
 
   const start = performance.now();
-  keyPair = await generateKeyPair(currentVariant);
+  try {
+    keyPair = await generateKeyPair(currentVariant);
+  } catch (err) {
+    if (!renderRandomnessFailure(output, err)) throw err;
+    btn.disabled = false;
+    return;
+  }
   const elapsed = (performance.now() - start).toFixed(1);
 
   // The new keypair has signed nothing yet — retire the previous run's
@@ -253,7 +282,15 @@ async function handleSign(): Promise<void> {
   const output = document.getElementById('sign-output')!;
   output.innerHTML = `<span class="spinner"></span> Signing with ${currentVariant.toUpperCase()}…`;
 
-  const result = await sign(keyPair.privateKey, lastMessage, currentVariant);
+  let result;
+  try {
+    result = await sign(keyPair.privateKey, lastMessage, currentVariant);
+  } catch (err) {
+    // Hedged signing draws a fresh 32-byte rnd per signature, so it depends on
+    // the RBG just as keygen does. Stop and say so.
+    if (!renderRandomnessFailure(output, err)) throw err;
+    return;
+  }
   lastSignature = result.signature;
 
   const note = currentVariant === 'ml-dsa-87'
