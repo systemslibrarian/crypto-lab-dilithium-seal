@@ -127,6 +127,40 @@ is not a validation.
 
 ---
 
+## 10. Are the gates themselves real?
+
+Every test above passes. That is necessary and it is not the interesting
+question: a test that asserts nothing passes exactly as loudly as one that
+asserts everything, and a suite cannot answer that about itself.
+
+`scripts/verify-gates.mjs` introduces a specific, realistic defect, runs the
+gate that is supposed to catch it, and **requires that gate to fail**. It runs
+weekly. It is the only check in this repository whose success condition is a
+failure.
+
+| Defect introduced | Claim it attacks | Caught by |
+|---|---|---|
+| The CSP meta element removed | An enforced Content-Security-Policy ships | `e2e/csp.spec.ts` |
+| `verify()` always returns `true` | An invalid signature is rejected | `properties` + `malformed-inputs` |
+| The public-key length check deleted | FIPS 204 §3.6.2 returns false on a wrong length | `malformed-inputs.test.ts` |
+| `Math.random` introduced into `src/crypto/` | No non-cryptographic randomness in the crypto path | `runtime.test.ts` |
+| τ changed from 49 to 50 | Every FIPS 204 parameter matches the standard | `parameters.test.ts` |
+| The displayed library version pinned to a stale string | The version cannot drift from the lockfile | `runtime.test.ts` |
+| `actions/checkout` reverted to a tag | Every Action is pinned to a commit SHA | `check-action-pins.mjs` |
+| `'unsafe-inline'` added to the CSP | The build refuses an unsafe policy | `npm run build` |
+| The "ML-DSA-87 prioritizes security" line restored | No set is presented as automatically best | `resilience.spec.ts` |
+| The hero's hedge replaced with "provably secure" | No page states a security property as fact | `provenance.spec.ts` |
+| One byte of a vendored NIST vector changed | The pinned vectors are the ones recorded | `acvp-conformance.test.ts` |
+
+**11 of 11 caught.** On its first run it was 9 of 11, and one of the misses was
+real: the ranking-language test read like a page-wide ban but only ever looked
+at the page *before anything was signed*, which is the one state where that
+language could not appear. It now drives a signature on every parameter set
+first. That defect had been in the suite since Priority 8 and no amount of
+green runs would have revealed it.
+
+---
+
 ## What this project still does not have
 
 1. **No independent audit** of the cryptographic implementation, and none of this repository's code.
