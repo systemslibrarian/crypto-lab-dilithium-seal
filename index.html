@@ -38,13 +38,26 @@
       content="default-src 'none'; script-src 'self' {{CSP_SCRIPT_HASHES}}; style-src 'self' {{CSP_STYLE_HASHES}}; img-src 'self' data:; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
     />
     <script>
-      // Dark is the only theme. Pin it before first paint, and overwrite any
-      // 'light' a visitor stored back when the header carried a theme toggle.
+      // Dark by default, light when the visitor's OS asks for it.
+      //
+      // The shared Crypto Lab header hides in-page theme toggles fleet-wide, so
+      // this page has no control of its own — which made `prefers-color-scheme`
+      // the only control a visitor has, and it was being ignored. A complete
+      // light palette already existed in the stylesheet and no visitor could
+      // reach it. Honouring the OS setting makes it reachable; the default for
+      // anyone who has not asked is unchanged.
+      //
+      // Runs before first paint so there is no flash of the wrong palette.
       (function () {
+        var light = false;
         try {
-          localStorage.setItem('theme', 'dark');
+          light = window.matchMedia('(prefers-color-scheme: light)').matches;
         } catch (e) {}
-        document.documentElement.setAttribute('data-theme', 'dark');
+        var theme = light ? 'light' : 'dark';
+        try {
+          localStorage.setItem('theme', theme);
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', theme);
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔏</text></svg>" />
@@ -131,7 +144,11 @@
 </style>
 <a class="cl-skip-link" href="#app">Skip to content</a>
 <header class="cl-topbar" role="banner" aria-label="Crypto Lab">
-  <a class="cl-brand" href="https://crypto-lab.systemslibrarian.dev/" aria-label="Crypto Lab home">
+  <!-- No aria-label: WCAG 2.5.3 requires the accessible name to contain the
+       visible text, and any label short enough to be useful ("Crypto Lab home")
+       failed that against the visible "CL CRYPTO LAB systemslibrarian.dev".
+       Letting the visible text BE the name satisfies the rule exactly. -->
+  <a class="cl-brand" href="https://crypto-lab.systemslibrarian.dev/">
     <span class="cl-badge">CL</span>
     <span class="cl-brand-text">
       <span class="cl-title">CRYPTO LAB</span>
@@ -188,7 +205,14 @@
       </header>
       <div id="standards-strip" class="std-strip"></div>
       <nav id="tabs" role="tablist" aria-label="Demo sections"></nav>
-      <main id="tab-content" role="tabpanel" tabindex="0"></main>
+      <!-- The tabpanel role must live on its own element. Putting it on <main>
+           OVERRODE main's implicit landmark role, leaving the document with no
+           main landmark — invisible to the WCAG-tagged axe gate, because
+           `landmark-one-main` is a best-practice rule rather than a WCAG one,
+           and found by Lighthouse. -->
+      <main id="main-content">
+        <div id="tab-content" role="tabpanel" tabindex="0"></div>
+      </main>
     </div>
     <footer class="site-footer">
       <div class="site-footer-links">

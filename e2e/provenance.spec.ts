@@ -163,9 +163,15 @@ test.describe('claims carry citations', () => {
         const label = (await link.getAttribute('aria-label')) ?? '';
         expect(href, `citation on ${id}`).toMatch(/^https:\/\//);
         // "FIPS 204 Tbl 2" read aloud out of context is not a destination; the
-        // accessible name has to name the document.
-        expect(label, `citation on ${id}`).toMatch(/^Source: /);
+        // accessible name has to name the document...
+        expect(label, `citation on ${id}`).toMatch(/ — source: /);
         expect(label.length).toBeGreaterThan(20);
+        // ...and WCAG 2.5.3 (Label in Name, level A) requires it to CONTAIN
+        // the visible text, so voice control can activate what it can see.
+        const visible = ((await link.innerText()) ?? '').replace(/\s*⚠$/, '').trim();
+        expect(label.toLowerCase(), `visible "${visible}" vs name "${label}"`).toContain(
+          visible.toLowerCase()
+        );
         seen.add(href);
       }
     }

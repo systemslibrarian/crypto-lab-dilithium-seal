@@ -17,6 +17,7 @@ import { truncateHex, formatBytes, h, escapeHTML } from './helpers';
 import { cite } from './provenance';
 import { renderImplementationBadge } from './implementation';
 import { fidelityBadge } from './fidelity';
+import { renderSelectorGuidance } from './selector-guidance';
 
 let currentVariant: MLDSAVariant = 'ml-dsa-65';
 let keyPair: MLDSAKeyPair | null = null;
@@ -46,6 +47,7 @@ export function renderSignVerify(container: HTMLElement): void {
              never under violations, which is why a violations-only gate could
              not see it. -->
         <div class="info-grid" id="param-info" role="group" aria-label="Parameter sizes"></div>
+        <p class="text-sm text-muted mt-1" id="variant-guidance" aria-live="polite"></p>
       </div>
 
       <div class="section">
@@ -68,6 +70,8 @@ export function renderSignVerify(container: HTMLElement): void {
         <div id="verify-output" aria-live="assertive"></div>
       </div>
     </div>
+
+    ${renderSelectorGuidance()}
 
     <div class="card">
       <h2>Seal a Document</h2>
@@ -195,6 +199,26 @@ function clearSignatureState(): void {
   }
 }
 
+/**
+ * Guidance that changes with the selection.
+ *
+ * Deliberately phrased as "use this when X requires it", never as a ranking.
+ * See src/ui/selector-guidance.ts for why.
+ */
+const VARIANT_GUIDANCE: Record<MLDSAVariant, string> = {
+  'ml-dsa-44':
+    'Use when your protocol or policy requires NIST security category 2, or when signature and ' +
+    'key size dominate the cost. Smallest of the three.',
+  'ml-dsa-65':
+    'Use when your protocol or policy requires NIST security category 3. Several early ' +
+    'post-quantum protocol profiles name this set, which makes it a common interoperability ' +
+    'default.',
+  'ml-dsa-87':
+    'Use when your protocol or policy requires NIST security category 5, or when the data must ' +
+    'stay authentic for decades. Not a general upgrade — a higher category than your ' +
+    'counterparty expects produces signatures they reject.',
+};
+
 function updateParamInfo(): void {
   const info = document.getElementById('param-info')!;
   const p = ML_DSA_PARAMS[currentVariant];
@@ -204,6 +228,9 @@ function updateParamInfo(): void {
     <div class="info-item"><div class="label">Signature</div><div class="value">${formatBytes(p.signature)}</div></div>
     <div class="info-item"><div class="label">Security Cat.</div><div class="value">${p.securityCategory}</div></div>
   `;
+
+  const guidance = document.getElementById('variant-guidance');
+  if (guidance) guidance.textContent = VARIANT_GUIDANCE[currentVariant];
 }
 
 function bindEvents(): void {
@@ -296,9 +323,12 @@ async function handleSign(): Promise<void> {
   }
   lastSignature = result.signature;
 
-  const note = currentVariant === 'ml-dsa-87'
-    ? ' <span class="text-muted">(ML-DSA-87 prioritizes security over speed)</span>'
-    : '';
+  // No note ranking the parameter sets against each other. The page used to
+  // print "(ML-DSA-87 prioritizes security over speed)" here, which reads as a
+  // ranking with ML-DSA-87 on top; the parameter sets are alternatives chosen
+  // by required security category and by what you must interoperate with. The
+  // guidance panel below the selector says how to choose.
+  const note = '';
 
   output.innerHTML = `
     <div class="text-sm mt-1"><strong>Signature</strong> (${result.signature.length} bytes):</div>

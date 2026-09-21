@@ -16,6 +16,9 @@ import { cite } from './provenance';
 
 const { library, dependencies, audit, validation } = RUNTIME_FACTS;
 
+/** Where the assurance documents live. */
+const REPO = 'https://github.com/systemslibrarian/crypto-lab-dilithium-seal';
+
 function yesNo(value: boolean, yes: string, no: string): string {
   // Never colour alone (WCAG 1.4.1): the glyph and the words carry it.
   return value
@@ -140,6 +143,42 @@ export function renderImplementationIdentity(): string {
         Each of these changes what you should conclude from a ✓ VERIFIED badge.
       </p>
       ${limitationCards()}
+    </div>
+
+    <div class="card" id="assurance-documents">
+      <h2>Security policy, threat model and full limitations</h2>
+      <p class="text-sm text-muted mb-1">
+        The six above are the ones that change how you read this page. The
+        documents below are the long form — written for someone deciding whether
+        to trust this, or how to report a problem with it.
+      </p>
+      <ul class="text-sm ref-list" id="assurance-links">
+        <li>
+          <a href="${REPO}/blob/main/SECURITY.md" target="_blank" rel="noopener">Security policy</a>
+          — how to report a vulnerability, what is in and out of scope, and the
+          table of security properties CI enforces on every change.
+        </li>
+        <li>
+          <a href="${REPO}/blob/main/THREAT-MODEL.md" target="_blank" rel="noopener">Threat model</a>
+          — assets, trust boundary, and eight named threats from private-key
+          exposure to supply-chain compromise, each with what is done and where
+          it stops.
+        </li>
+        <li>
+          <a href="${REPO}/blob/main/KNOWN-LIMITATIONS.md" target="_blank" rel="noopener">Known limitations</a>
+          — sixteen, in full, including the ones that cannot be fixed in a
+          browser page.
+        </li>
+        <li>
+          <a href="${REPO}/blob/main/vectors/acvp/SOURCE.md" target="_blank" rel="noopener">Conformance vector provenance</a>
+          — which NIST ACVP vectors are pinned, at which commit, and what
+          passing them does and does not prove.
+        </li>
+        <li>
+          <a href="${REPO}" target="_blank" rel="noopener">Source code</a>
+          — every claim on this page is checked by a test in this repository.
+        </li>
+      </ul>
     </div>
   `;
 }

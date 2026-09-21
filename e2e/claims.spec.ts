@@ -229,11 +229,18 @@ for (const variant of VARIANTS) {
     const sign = await page.locator('#sign-output').innerText();
     expect(num(sign.match(/Signature \(([\d,]+) bytes\)/)![1])).toBe(table1[variant].signature);
     expect(num(sign.match(/Signed in ([\d.]+) ms/)![1])).toBeGreaterThan(0);
-    // The "prioritizes security over speed" aside is claimed for ML-DSA-87 only.
-    expect(
-      sign.includes('ML-DSA-87 prioritizes security over speed'),
-      `${variant}: the ML-DSA-87 speed aside must appear for -87 and no other set`,
-    ).toBe(variant === 'ML-DSA-87');
+    // The sign output used to carry "(ML-DSA-87 prioritizes security over
+    // speed)", which reads as a ranking with ML-DSA-87 on top. The three sets
+    // are alternatives selected by required security category and by what you
+    // must interoperate with, so no output may rank them against each other.
+    expect(sign, `${variant}: no ranking language in the sign output`).not.toMatch(
+      /prioriti[sz]es security over speed|strongest|most secure|best choice/i,
+    );
+    // The guidance beside the selector changes with the selection, and says
+    // when to use this set rather than where it sits in a ranking.
+    const guidance = await page.locator('#variant-guidance').innerText();
+    expect(guidance, `${variant} guidance`).toMatch(/^Use when/);
+    expect(guidance).toContain(`category ${table1[variant].category}`);
 
     await page.locator('#btn-verify').click();
     const verify = page.locator('#verify-output');
