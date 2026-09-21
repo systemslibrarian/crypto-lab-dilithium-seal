@@ -2,7 +2,7 @@
 
 ## What It Is
 
-This project is a browser demo for ML-DSA (CRYSTALS-Dilithium), including ML-DSA-44, ML-DSA-65, and ML-DSA-87 parameter sets from NIST FIPS 204. It demonstrates digital signature creation and verification, plus document sealing and tamper checks using the same primitive. The algorithm solves the problem of authenticating messages and proving integrity in a way intended to remain secure against quantum adversaries. ML-DSA is an asymmetric, post-quantum digital signature scheme based on lattice assumptions (Module-LWE and Module-SIS).
+This project is a browser demo for **ML-DSA**, including the ML-DSA-44, ML-DSA-65, and ML-DSA-87 parameter sets from NIST FIPS 204. ML-DSA is the standard; **CRYSTALS-Dilithium** is the competition submission it was standardized from, and the two are not interchangeable — see *Provenance and terminology* below. It demonstrates digital signature creation and verification, plus document sealing and tamper checks using the same primitive. The algorithm solves the problem of authenticating messages and proving integrity in a way intended to remain secure against quantum adversaries. ML-DSA is an asymmetric, post-quantum digital signature scheme based on lattice assumptions (Module-LWE and Module-SIS).
 
 The "How It Works" tab now opens with a plain-language "prove you know a secret without revealing it" scaffold, then lets you drive the concepts yourself: an **interactive Fiat-Shamir-with-aborts animation** where pressing *Sign* runs the real reject-and-retry loop — rejecting oversized responses `z = y + c·s₁` that would leak the secret and showing the reject count — and an **interactive Module-LWE panel** with an error slider that flips the problem between trivially solvable (`e = 0`) and quantum-hard. These visualizations compute real modular lattice arithmetic in the browser at an illustrative small scale; the spec-accurate, KAT-backed signing/verification path is unchanged (`@noble/post-quantum`, FIPS 204). The seal demo's tamper flow now separates the two lessons explicitly — the ML-DSA signature alone catches an edit even when the SHA-256 hash is recomputed to agree — so learners see that authenticity comes from the signature, not the hash.
 
@@ -18,6 +18,62 @@ The "How It Works" tab now opens with a plain-language "prove you know a secret 
 **[systemslibrarian.github.io/crypto-lab-dilithium-seal](https://systemslibrarian.github.io/crypto-lab-dilithium-seal/)**
 
 The demo lets you generate keys, sign and verify messages, seal documents, and compare ML-DSA against classical and other PQ signature schemes. You can interact with parameter-set controls (ML-DSA-44, ML-DSA-65, ML-DSA-87), message/document inputs, and a benchmark runner that executes fixed signing iterations. It also includes educational tabs explaining the construction and where ML-DSA fits in the NIST PQC trio.
+
+## Provenance and Terminology
+
+Every factual claim the demo makes about ML-DSA is registered in
+`src/data/sources.ts` against the primary document it comes from, with the
+locator inside that document, and rendered next to the claim as a link. A
+standards-status strip sits between the hero and the tab bar on **every** tab,
+so the edition, the errata state and the review date are readable without
+opening this file.
+
+| | |
+|---|---|
+| Edition implemented | FIPS 204, initial public version, 13 August 2024 |
+| Errata incorporated | **None** — no errata update or revision has been issued |
+| Errata spreadsheet reviewed | 31 July 2026 |
+| Standards reviewed | 2026-09-20 |
+
+NIST maintains a *potential updates (errata)* spreadsheet for FIPS 204 whose own
+header says the entries "ARE NOT official changes, but may be corrected in a
+future errata update." One entry matters here: it records that Table 1's
+expected repetition counts (4.25, 5.1, 3.85) "are not quite accurate" and will
+become **4.36, 5.14, 3.91**. The demo shows the published figures, the pending
+ones, and the fact that the correction is not yet official.
+
+### Two claims that were wrong
+
+- **"ML-DSA-65 … approximately 165-bit post-quantum security."** That number
+  appears nowhere in FIPS 204. It is the *Quantum Core-SVP* estimate from
+  Table 1 of the round-3 CRYSTALS-Dilithium submission — a competition-era
+  figure — and FIPS 204 §4 says in terms that security strength here "is not
+  described by a single number, such as '128 bits of security.'" The page now
+  states the security *category*, quotes FIPS 204's refusal, and attributes the
+  Core-SVP figure to the submission where it belongs.
+- **"the Dilithium specification's expected repetition counts are 4.25, 5.1 and
+  3.85."** Those are FIPS 204 Table 1's numbers, not the submission's, and NIST
+  has since recorded them as inaccurate.
+
+### CRYSTALS-Dilithium is not a synonym for ML-DSA
+
+The difference is visible in bytes this demo produces:
+
+| Aspect | Round 3 (2021) | ML-DSA (FIPS 204) |
+|---|---|---|
+| Message formatting | µ = H(tr ‖ M) | µ = H(tr ‖ M′), M′ = 0x00 ‖ \|ctx\| ‖ ctx ‖ M |
+| Public-key hash `tr` | 256 bits | 512 bits → every private key is 32 B larger |
+| Commitment hash `c̃` | 32 B for every set | λ/4 B — 32, 48, 64 |
+| Signature size | 2420 / **3293** / **4595** | 2420 / **3309** / **4627** |
+
+Two of the three signature sizes differ, so a round-3 signature is not an ML-DSA
+signature. A test signs with each parameter set and asserts the length is the
+FIPS 204 one and *not* the round-3 one, so this stays demonstrated rather than
+asserted.
+
+Drafts are labelled as drafts. NIST IR 8547, the transition-timeline document,
+is still an **Initial Public Draft**, and the page says so wherever its dates
+appear.
 
 ## FIPS 204 Conformance Evidence
 

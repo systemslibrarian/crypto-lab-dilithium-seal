@@ -3,6 +3,8 @@
  * Reference: NIST FIPS 204 — https://csrc.nist.gov/pubs/fips/204/final
  */
 
+import { cite } from './provenance';
+
 const CRYPTO_COMPARE_BASE = 'https://github.com/systemslibrarian/crypto-compare';
 
 export function renderPQCTrio(container: HTMLElement): void {
@@ -52,18 +54,26 @@ export function renderPQCTrio(container: HTMLElement): void {
       <div class="info-grid">
         <div class="info-item info-item-left">
           <div class="label">ML-KEM (FIPS 203)</div>
-          <p class="text-sm text-muted mt-1">Chrome TLS 1.3, Cloudflare, AWS KMS, Signal Protocol (PQXDH).</p>
+          <p class="text-sm text-muted mt-1">Deployed in browser and CDN TLS key exchange and in messaging key agreement.</p>
         </div>
         <div class="info-item info-item-left">
           <div class="label">ML-DSA (FIPS 204)</div>
-          <p class="text-sm text-muted mt-1">NIST recommended for code signing. Certificate authorities beginning PQ transition.</p>
+          <p class="text-sm text-muted mt-1">Being profiled for X.509 certificates, code signing and protocol authentication.</p>
         </div>
         <div class="info-item info-item-left">
           <div class="label">SLH-DSA (FIPS 205)</div>
-          <p class="text-sm text-muted mt-1">Recommended for long-lived signatures and document archives. Conservative alternative to ML-DSA.</p>
+          <p class="text-sm text-muted mt-1">Positioned for long-lived signatures where a conservative, hash-only assumption is preferred.</p>
         </div>
       </div>
-      <p class="text-sm text-muted mt-1"><em>NIST explicitly recommends ML-DSA as the primary post-quantum signature scheme and SLH-DSA as a conservative backup.</em></p>
+      <p class="text-sm text-muted mt-1">
+        Deployment moves faster than any citation this page could pin, so the descriptions above are
+        deliberately general: they are not sourced to a primary document and should not be read as
+        current product claims. What <em>is</em> sourced is NIST's own transition expectation —
+        classical algorithms at 112-bit strength deprecated after 2030 and disallowed after 2035
+        ${cite('transition')} — and that document is still an <strong>initial public draft</strong>,
+        so those dates are proposed rather than final.
+      </p>
+      <p class="text-sm text-muted mt-1"><em>On publication NIST described FIPS 204 as "intended as the primary standard for protecting digital signatures" and FIPS 205 as "intended as a backup method in case ML-DSA proves vulnerable."</em> ${cite('primaryStandard')}</p>
     </div>
 
     <div class="card">
@@ -74,7 +84,7 @@ export function renderPQCTrio(container: HTMLElement): void {
         <div class="tl-item"><span class="tl-year">2019</span> — Second round: 26 candidates advance</div>
         <div class="tl-item"><span class="tl-year">2020</span> — Third round: 7 finalists and 8 alternates selected</div>
         <div class="tl-item"><span class="tl-year">2022</span> — CRYSTALS-Dilithium, CRYSTALS-Kyber, and SPHINCS+ selected for standardization</div>
-        <div class="tl-item"><span class="tl-year">Aug 2024</span> — <strong>FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA)</strong> published as final standards</div>
+        <div class="tl-item"><span class="tl-year">Aug 2024</span> — <strong>FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA)</strong> published as final standards. The submissions were <em>renamed and revised</em> in the process: ML-DSA is not a relabelled CRYSTALS-Dilithium ${cite('lineage')}.</div>
       </div>
     </div>
   `;

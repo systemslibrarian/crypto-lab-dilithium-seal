@@ -1,5 +1,9 @@
 /**
- * dilithium-seal — ML-DSA (CRYSTALS-Dilithium) browser demo
+ * dilithium-seal — ML-DSA browser demo
+ *
+ * ML-DSA is the NIST FIPS 204 standard; CRYSTALS-Dilithium is the competition
+ * submission it was standardized from. They are related, not interchangeable —
+ * see src/data/sources.ts and the standards-status panel on the About tab.
  * Reference: NIST FIPS 204 — https://csrc.nist.gov/pubs/fips/204/final
  */
 
@@ -10,6 +14,7 @@ import { renderCompare } from './ui/tab2-compare';
 import { renderHowItWorks } from './ui/tab3-how-it-works';
 import { renderPQCTrio } from './ui/tab4-pqc-trio';
 import { renderAbout } from './ui/tab5-about';
+import { renderStandardsStrip } from './ui/provenance';
 
 const tabs: Tab[] = [
   { id: 'sign-verify', label: 'Sign & Verify', render: renderSignVerify },
@@ -43,6 +48,9 @@ function initThemeToggle(): void {
     applyTheme(active === 'dark' ? 'light' : 'dark');
   });
 }
+
+const strip = document.getElementById('standards-strip');
+if (strip) renderStandardsStrip(strip);
 
 initTabs(tabs);
 initThemeToggle();

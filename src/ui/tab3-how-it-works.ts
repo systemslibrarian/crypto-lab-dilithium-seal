@@ -8,6 +8,8 @@
  */
 
 import { renderFiatShamir, renderModuleLWE } from './viz-render';
+import { cite } from './provenance';
+import { FIPS_204_EDITION, formatDate } from '../data/sources';
 
 interface StepInfo {
   title: string;
@@ -89,7 +91,7 @@ const STEPS: StepInfo[] = [
           <div class="label-tag">5. Output</div>
           Signature: <strong>(c̃, z, h)</strong> where h is a hint vector
         </div>
-        <p class="mt-1">The abort–retry loop runs about 4–5 times on average — the Dilithium specification's expected repetition counts are 4.25, 5.1 and 3.85 for ML-DSA-44, -65 and -87. Without aborts, statistical analysis of many signatures could recover s₁.</p>
+        <p class="mt-1">The abort–retry loop runs a handful of times on average. FIPS 204 Table 1 gives expected repetitions of <strong>4.25, 5.1 and 3.85</strong> for ML-DSA-44, -65 and -87 ${cite('repetitions')}. NIST's errata spreadsheet records that these "are not quite accurate" — line 28 of Algorithm 7 had not been accounted for — and that the table <em>will be</em> updated to <strong>4.36, 5.14 and 3.91</strong>. That correction is not yet an official change to the standard, so the published figures are shown above and the pending ones here. Without aborts, statistical analysis of many signatures could recover s₁.</p>
       </details>
     `,
   },
@@ -136,8 +138,8 @@ const STEPS: StepInfo[] = [
           Module-SIS: no known quantum algorithm faster than classical<br>
           Best known quantum speedup: Grover's → quadratic reduction only
         </div>
-        <p class="mt-1"><strong>ML-DSA-65</strong> targets NIST Security Category 3 — providing approximately <strong>165-bit post-quantum security</strong>. Even a large-scale quantum computer would need an infeasible number of operations to forge a signature.</p>
-        <p class="mt-1">The lattice problems underlying ML-DSA have been studied for over 25 years with no quantum breakthrough. This is why NIST selected them as the foundation for post-quantum cryptography.</p>
+        <p class="mt-1"><strong>ML-DSA-65 is claimed to be in NIST security strength category 3</strong> ${cite('categories')}. It is tempting to restate that as a bit count, and FIPS 204 explicitly declines to: "security strength is not described by a single number, such as '128 bits of security'" ${cite('notOneNumber')}. A category is a claim that breaking the scheme costs at least as much as breaking a named block cipher or hash, under any realistic model of computation.</p>
+        <p class="mt-1 annot"><span class="annot-label">Where the "165-bit" figure some pages quote comes from:</span> the round-3 <em>CRYSTALS-Dilithium</em> submission, whose Table 1 lists Quantum Core-SVP estimates of 112, 165 and 229 bits for NIST levels 2, 3 and 5 ${cite('round3CoreSvp')}. That is a competition-era estimate for the submission, not a property FIPS 204 states about ML-DSA, and this page does not present it as one.</p>
       </details>
     `,
   },
@@ -186,7 +188,7 @@ export function renderHowItWorks(container: HTMLElement): void {
     <div class="card">
       <h2>Attribution</h2>
       <p class="text-sm text-muted">CRYSTALS-Dilithium was designed by Léo Ducas, Eike Kiltz, Tancrède Lepoint, Vadim Lyubashevsky, Peter Schwabe, Gregor Seiler, and Damien Stehlé.</p>
-      <p class="text-sm text-muted mt-1">Submitted to the NIST Post-Quantum Cryptography competition in 2017. Selected as a third-round finalist in 2020, then chosen for standardization in 2022. Standardized as <strong>ML-DSA (FIPS 204)</strong> in August 2024.</p>
+      <p class="text-sm text-muted mt-1">Submitted to the NIST Post-Quantum Cryptography process in 2017. Selected as a third-round finalist in 2020, then chosen for standardization in 2022. NIST published <strong>ML-DSA</strong> from it in FIPS 204 on ${formatDate(FIPS_204_EDITION.published)} — a different document with different encodings, not a rename ${cite('lineage')}. What this demo executes is ML-DSA.</p>
       <p class="text-sm text-muted mt-1"><strong>Connection to ML-KEM:</strong> Both ML-DSA and ML-KEM (FIPS 203, demonstrated in <a href="https://github.com/systemslibrarian/crypto-compare" target="_blank" rel="noopener">kyber-vault</a>) use the Module-LWE problem — the same mathematical foundation applied to different cryptographic goals (signatures vs key encapsulation).</p>
     </div>
   `;

@@ -4,6 +4,7 @@
  */
 
 import { generateKeyPair, sign, type MLDSAVariant } from '../crypto/mldsa';
+import { cite } from './provenance';
 
 interface SchemeInfo {
   name: string;
@@ -28,7 +29,7 @@ export function renderCompare(container: HTMLElement): void {
   container.innerHTML = `
     <div class="card">
       <h2>ML-DSA vs Classical Signatures</h2>
-      <p class="text-sm text-muted mb-1">Size comparison across classical and post-quantum digital signature schemes.</p>
+      <p class="text-sm text-muted mb-1">Size comparison across classical and post-quantum digital signature schemes. ML-DSA sizes are FIPS 204 Table 2 ${cite('sizes')}; the SLH-DSA row is FIPS 205 and the classical rows are their own standards.</p>
 
       <table class="comparison-table" tabindex="0">
         <caption class="sr-only">Public key size, signature size, quantum safety, and hardness assumption for classical and post-quantum signature schemes.</caption>
@@ -78,11 +79,11 @@ export function renderCompare(container: HTMLElement): void {
       <div class="info-grid">
         <div class="info-item info-item-left">
           <div class="label">ML-DSA (FIPS 204)</div>
-          <p class="text-sm text-muted mt-1">Faster signing and verification, moderate signature size. Best for TLS certificates, code signing, real-time protocols.</p>
+          <p class="text-sm text-muted mt-1">Faster signing and verification, moderate signature size. NIST describes FIPS 204 as "the primary standard for protecting digital signatures" ${cite('primaryStandard')}.</p>
         </div>
         <div class="info-item info-item-left">
           <div class="label">SLH-DSA (FIPS 205)</div>
-          <p class="text-sm text-muted mt-1">Slower, larger signatures, hash-only assumption. Best for long-lived archives, maximum conservatism.</p>
+          <p class="text-sm text-muted mt-1">Slower, larger signatures, hash-only assumption. NIST describes FIPS 205 as "a backup method in case ML-DSA proves vulnerable" ${cite('primaryStandard')}.</p>
         </div>
         <div class="info-item info-item-left">
           <div class="label">Use Both</div>

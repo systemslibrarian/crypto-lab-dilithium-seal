@@ -13,6 +13,7 @@ import {
 } from '../crypto/mldsa';
 import { sealDocument, verifyDocument, type SealedDocument } from '../crypto/seal';
 import { truncateHex, formatBytes, h, escapeHTML } from './helpers';
+import { cite } from './provenance';
 
 let currentVariant: MLDSAVariant = 'ml-dsa-65';
 let keyPair: MLDSAKeyPair | null = null;
@@ -30,7 +31,7 @@ export function renderSignVerify(container: HTMLElement): void {
   container.innerHTML = `
     <div class="card">
       <h2>ML-DSA Digital Signatures</h2>
-      <p class="text-sm text-muted mb-1">Generate a keypair, sign a message, verify the signature, and test tamper detection.</p>
+      <p class="text-sm text-muted mb-1">Generate a keypair, sign a message, verify the signature, and test tamper detection. Every operation below is real ML-DSA as specified in FIPS 204 — the sizes shown are the standard's own ${cite('sizes')}.</p>
 
       <div class="section">
         <div class="section-title" id="variant-label">Parameter Set</div>

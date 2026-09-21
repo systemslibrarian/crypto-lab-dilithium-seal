@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Interactive browser demo of ML-DSA (CRYSTALS-Dilithium), the NIST FIPS 204 post-quantum digital signature standard. Sign, verify, seal documents, and compare schemes." />
+    <meta name="description" content="Interactive browser demo of ML-DSA, the NIST FIPS 204 post-quantum digital signature standard, standardized from the CRYSTALS-Dilithium submission. Sign, verify, seal documents, and compare schemes." />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f6f8fa" media="(prefers-color-scheme: light)" />
-    <title>dilithium-seal — ML-DSA (CRYSTALS-Dilithium) | NIST FIPS 204</title>
+    <title>dilithium-seal — ML-DSA | NIST FIPS 204</title>
     <!--
       Content-Security-Policy. See build/csp.ts for why this is a <meta> rather
       than a response header, what that costs, and why the sha256 values are
@@ -177,7 +177,7 @@
       <header class="cl-hero">
         <div class="cl-hero-main">
           <h1 class="cl-hero-title">Dilithium Seal</h1>
-          <p class="cl-hero-sub">ML-DSA · CRYSTALS-Dilithium · NIST FIPS 204</p>
+          <p class="cl-hero-sub">ML-DSA — NIST FIPS 204 — standardized from the CRYSTALS-Dilithium submission</p>
           <p class="cl-hero-desc">Generate lattice-based keypairs, sign and verify messages, seal documents, and watch a single flipped bit fail verification.</p>
         </div>
         <aside class="cl-hero-why" aria-label="Why it matters">
@@ -186,6 +186,7 @@
         </aside>
         <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode">🌙</button>
       </header>
+      <div id="standards-strip" class="std-strip"></div>
       <nav id="tabs" role="tablist" aria-label="Demo sections"></nav>
       <main id="tab-content" role="tabpanel" tabindex="0"></main>
     </div>

@@ -976,3 +976,56 @@ a:focus-visible {
 }
 
 .site-footer-links { margin-bottom: 0.75rem; }
+
+/* ── Provenance: claim-level citations and the standards strip ─────────────
+   Added with the primary-source registry (src/data/sources.ts). A citation is
+   a real link to the document, not a superscript pointing at a bibliography —
+   this is a tab interface, so a numbered reference could point at a panel that
+   is not currently rendered. */
+
+.cite {
+  font-size: 0.76em;
+  /* NOT `white-space: nowrap`. It was, and a citation inside the Compare tab's
+     info-grid became an unbreakable 288px run that pushed the page to a 604px
+     scrollWidth at a 380px viewport — a WCAG 1.4.10 reflow failure the gate
+     caught. A wrapped citation reads fine; a horizontally scrolling page does not. */
+  /* --accent is documented above as >=4.5:1 on --surface and --surface2, which
+     is what this small text needs for WCAG 1.4.3. No border or background: a
+     bordered chip would be a non-text contrast surface to maintain for no gain. */
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.cite:hover { color: var(--accent-hover); }
+/* A citation whose claim a second source qualifies or corrects. The ⚠ in the
+   link text carries the meaning; the colour only reinforces it (WCAG 1.4.1). */
+.cite-qualified { color: var(--yellow); }
+.cite-qualified:hover { color: #e3b341; }
+
+.text-yellow { color: var(--yellow); }
+
+/* The always-visible standards status line, between the hero and the tabs. */
+.std-strip {
+  background-color: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+}
+.std-strip-line {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.std-strip-line strong { color: var(--text); }
+.std-strip-sep { margin: 0 0.35rem; }
+
+/* Tables whose cells hold sentences rather than numbers. Without this the
+   claims table forces horizontal page scroll at 380px, failing WCAG 1.4.10. */
+.table-prose td, .table-prose th { overflow-wrap: anywhere; }
+.table-prose { font-size: 0.78rem; }
+
+@media (max-width: 560px) {
+  .std-strip-sep { display: block; height: 0; overflow: hidden; }
+}
