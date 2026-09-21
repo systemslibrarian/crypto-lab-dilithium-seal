@@ -1143,3 +1143,9 @@ a:focus-visible {
   .info-grid { grid-template-columns: 1fr; }
 }
 .info-item .value { overflow-wrap: anywhere; }
+
+/* The rows for the parameter set the reader actually selected. A left border
+   and a heavier row header, never colour alone (WCAG 1.4.1) — the note above
+   the table names the set in words as well. */
+.bench-selected th[scope='row'] { font-weight: 700; color: var(--accent); }
+.bench-selected td:first-of-type { box-shadow: inset 3px 0 0 var(--accent); }
