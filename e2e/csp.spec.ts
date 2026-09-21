@@ -233,7 +233,7 @@ test.describe('network isolation', () => {
     await page.locator('#tab-btn-compare').click();
     await expect(page.locator('#pk-bars .bar-fill').first()).toBeVisible();
     await page.locator('#btn-benchmark').click();
-    await expect(page.locator('#bench-output table')).toBeVisible({ timeout: 300_000 });
+    await expect(page.locator('#bench-results')).toBeVisible({ timeout: 300_000 });
 
     // ── Tab 3: both interactive visualizations ───────────────────────────────
     await page.locator('#tab-btn-how-it-works').click();

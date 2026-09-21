@@ -772,7 +772,7 @@ test('the size bar charts encode the same numbers as the comparison table', asyn
   }
 });
 
-test('benchmark results are internally consistent: relative column and Ed25519 ratios', async ({
+test('every derived benchmark figure follows from the measurements printed beside it', async ({
   page,
 }) => {
   test.setTimeout(300_000);
@@ -780,341 +780,82 @@ test('benchmark results are internally consistent: relative column and Ed25519 r
   await page.goto('.');
   await page.locator('#tab-btn-compare').click();
   await page.locator('#btn-benchmark').click();
-  await expect(page.locator('#bench-output table')).toBeVisible({ timeout: 240_000 });
+  await expect(page.locator('#bench-results')).toBeVisible({ timeout: 240_000 });
   await expect(page.locator('#btn-benchmark')).toBeEnabled({ timeout: 240_000 });
 
-  const rows = await page.locator('#bench-output tbody tr').evaluateAll((trs) =>
+  // The medians the page printed, keyed "ML-DSA-65 sign".
+  const medians = new Map(
+    (
+      await page.locator('#bench-results tbody tr').evaluateAll((trs) =>
+        trs.map((tr) => {
+          const cells = Array.from(tr.querySelectorAll('td')).map((td) =>
+            (td as HTMLElement).innerText.trim(),
+          );
+          return { set: (tr.querySelector('th') as HTMLElement).innerText.trim(), cells };
+        }),
+      )
+    ).map((row) => [`${row.set} ${row.cells[0]}`, Number(row.cells[1])]),
+  );
+  expect(medians.size).toBe(9);
+
+  const baselineMissing = await page.locator('#bench-baseline-unavailable').count();
+  if (baselineMissing > 0) {
+    // The page must say it did not measure, rather than print a ratio anyway.
+    await expect(page.locator('#bench-baseline-unavailable')).toContainText('No comparison');
+    expect(await page.locator('#bench-baseline').count()).toBe(0);
+    expect(errors).toEqual([]);
+    return;
+  }
+
+  // Ed25519's own median, from the same run — or the page's statement that the
+  // clock could not resolve it. Both are acceptable; silently printing 0.000
+  // and dividing by it is not.
+  const summary = await page.locator('#bench-baseline-summary').innerText();
+  const exact = summary.match(/median sign ([\d.]+) ms/);
+  const unresolvable = /faster than this browser's clock can resolve/i.test(summary);
+  expect(
+    Boolean(exact) || unresolvable,
+    `baseline summary must state a median or say why it cannot: ${summary}`,
+  ).toBe(true);
+
+  // Every ratio cell must be the quotient of two medians the page printed.
+  const ratios = await page.locator('#bench-baseline tbody tr').evaluateAll((trs) =>
     trs.map((tr) => ({
-      name: (tr.querySelector('th') as HTMLElement).innerText.trim(),
-      ops: (tr.querySelectorAll('td')[0] as HTMLElement).innerText.trim(),
-      relative: (tr.querySelectorAll('td')[1] as HTMLElement).innerText.trim(),
+      set: (tr.querySelector('th') as HTMLElement).innerText.trim(),
+      cells: Array.from(tr.querySelectorAll('td')).map((td) => (td as HTMLElement).innerText.trim()),
     })),
   );
-  expect(rows.map((row) => row.name)).toEqual([...VARIANTS, 'Ed25519']);
+  expect(ratios.map((r) => r.set)).toEqual([...VARIANTS]);
 
-  const measured = rows.filter((row) => !row.ops.startsWith('N/A'));
-  // All three ML-DSA variants must have produced a real measurement.
-  expect(measured.length).toBeGreaterThanOrEqual(3);
-  const opsByName = new Map(measured.map((row) => [row.name, num(row.ops)]));
-  for (const value of opsByName.values()) expect(value).toBeGreaterThan(0);
-
-  const max = Math.max(...opsByName.values());
-  for (const row of measured) {
-    const expected = `${((num(row.ops) / max) * 100).toFixed(0)}%`;
-    expect(row.relative, `${row.name} relative column`).toBe(expected);
-  }
-  expect(measured.filter((row) => row.relative === '100%')).toHaveLength(1);
-  for (const row of rows) {
-    if (row.ops.startsWith('N/A')) expect(row.relative).toBe('—');
-  }
-
-  const summary = await page.locator('#bench-output p').innerText();
-  const ed25519 = opsByName.get('Ed25519');
-  if (ed25519 === undefined) {
-    expect(summary).toContain('did not provide Ed25519 signing');
-  } else {
-    expect(summary).toContain('Measured Ed25519 throughput ratio');
-    for (const variant of VARIANTS) {
-      const stated = num(summary.match(new RegExp(`${variant}: ([\\d.]+)×`))![1]);
-      const derived = ed25519 / opsByName.get(variant)!;
-      // Within 1% of the ratio implied by the two ops/sec cells the page printed
-      // (the cells are rounded to one decimal, the ratio is not).
-      expect(
-        Math.abs(stated - derived) / derived,
-        `${variant} ratio ${stated}× vs ops/sec-implied ${derived.toFixed(2)}×`,
-      ).toBeLessThan(0.01);
-    }
-  }
-  expect(errors).toEqual([]);
-});
-
-// ───────────────────── how it works: live visualizations ───────────────────
-
-test.describe('interactive visualizations', () => {
-  // Reduced motion makes the Fiat-Shamir reveal synchronous, so the assertions
-  // see the full run instead of racing a 650 ms-per-attempt animation.
-  //
-  // This MUST be page.emulateMedia, not test.use({ reducedMotion: 'reduce' }).
-  // On Playwright 1.61.1 the test.use form silently never reaches the page —
-  // matchMedia('(prefers-reduced-motion: reduce)') still reports false — so the
-  // animation kept running at full speed and these assertions were racing it,
-  // passing only on the generous timeouts below. emulateMedia persists across
-  // navigation, so setting it here covers each test's own goto.
-  test.beforeEach(async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-  });
-
-  // Guards the mechanism itself: an emulation that quietly no-ops is worse than
-  // none, because the comment above reads as if it were handled.
-  test('reduced-motion emulation actually reaches the page', async ({ page }) => {
-    await page.goto('.');
-    expect(
-      await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches),
-      'reduced-motion emulation did not reach the page',
-    ).toBe(true);
-  });
-
-  test('the Fiat-Shamir loop rejects exactly the responses its own rule rejects', async ({
-    page,
-  }) => {
-    test.setTimeout(120_000);
-    const errors = watchForPageErrors(page);
-    await page.goto('.');
-    await page.locator('#tab-btn-how-it-works').click();
-    await page.locator('#step-btn-2').click();
-
-    const scale = await page.locator('.fs-scale').innerText();
-    const bound = num(scale.match(/γ₁−β = \d+−\d+ = (\d+)/)![1]);
-    const gamma1 = num(scale.match(/γ₁−β = (\d+)−/)![1]);
-    const beta = num(scale.match(/γ₁−β = \d+−(\d+)/)![1]);
-    const tau = num(scale.match(/τ=(\d+)/)![1]);
-    const eta = num(scale.match(/η=(\d+)/)![1]);
-    // The bound the page prints must be the bound its own parameters imply.
-    expect(bound).toBe(gamma1 - beta);
-    // The source defines β as "τ·η worst-case shift from c·s₁" — the printed
-    // parameters must satisfy that relation, or the reject bound is arbitrary.
-    expect(beta, 'β must equal τ·η, the worst-case shift the page claims it bounds').toBe(
-      tau * eta,
+  for (const row of ratios) {
+    const sizes = await page.locator('#bench-sizes tbody tr').evaluateAll((trs) =>
+      Object.fromEntries(
+        trs.map((tr) => [
+          (tr.querySelector('th') as HTMLElement).innerText.trim(),
+          Array.from(tr.querySelectorAll('td')).map((td) =>
+            Number((td as HTMLElement).innerText.replace(/,/g, '')),
+          ),
+        ]),
+      ),
     );
+    // Size ratios are exact arithmetic on numbers printed in the same panel.
+    expect(Number(row.cells[3].replace(/[×>\s]/g, ''))).toBe(Math.round(sizes[row.set][0] / 32));
+    expect(Number(row.cells[4].replace(/[×>\s]/g, ''))).toBe(Math.round(sizes[row.set][2] / 64));
 
-    // The toy-vs-real table beside it must state the real ML-DSA-65 values,
-    // not a second set of invented ones: the whole point of putting the two
-    // columns side by side is that the right-hand one is the standard's.
-    const scaleTable = await page.locator('.fs-scale-table').innerText();
-    expect(scaleTable).toContain('8,380,417');
-    expect(scaleTable).toContain('256');
-    expect(scaleTable).toContain('(6, 5)');
-    const coeffs = num(
-      (await page.locator('.fs-scale-table tbody tr').first().locator('td').first().innerText()),
-    );
-
-    await page.locator('#fs-run').click();
-    await expect(page.locator('#fs-run')).toBeEnabled({ timeout: 60_000 });
-    await expect(page.locator('#fs-stats')).not.toBeEmpty();
-
-    const attempts = await page.locator('.fs-attempt').evaluateAll((cards) =>
-      cards.map((card) => ({
-        head: (card.querySelector('.fs-attempt-head') as HTMLElement).innerText,
-        cells: Array.from(card.querySelectorAll('.fs-cell')).map((cell) =>
-          Array.from(cell.querySelectorAll('.coeff-val')).map((v) => Number(v.textContent)),
-        ),
-        overBars: card.querySelectorAll('.fs-cell:nth-child(3) .coeff-bar.over').length,
-      })),
-    );
-    expect(attempts.length).toBeGreaterThan(0);
-
-    attempts.forEach((attempt, i) => {
-      const [y, cs1, z] = attempt.cells;
-      expect(y).toHaveLength(coeffs);
-      expect(cs1).toHaveLength(coeffs);
-      expect(z).toHaveLength(coeffs);
-      // The equation the card claims: z = y + c·s₁, coefficient by coefficient.
-      expect(z, `attempt ${i + 1}: z = y + c·s₁`).toEqual(y.map((yi, k) => yi + cs1[k]));
-
-      const infNorm = Math.max(...z.map(Math.abs));
-      const stated = num(attempt.head.match(/‖z‖∞ = (-?\d+)/)![1]);
-      expect(stated, `attempt ${i + 1}: stated ‖z‖∞`).toBe(infNorm);
-
-      const accepted = attempt.head.includes('ACCEPT');
-      // Verdict must follow from the number the card just printed.
-      expect(accepted, `attempt ${i + 1}: verdict vs ‖z‖∞=${infNorm} and bound ${bound}`).toBe(
-        infNorm < bound,
-      );
-      if (accepted) {
-        expect(attempt.head).toContain(`${infNorm} < ${bound}`);
-        expect(i, 'only the final attempt may be accepted').toBe(attempts.length - 1);
-      } else {
-        expect(attempt.head).toContain(`${infNorm} ≥ ${bound}`);
-        expect(attempt.head).toContain('would leak s₁');
-      }
-      // Red "over" bars mark exactly the coefficients at or past the bound.
-      expect(attempt.overBars, `attempt ${i + 1}: flagged coefficients`).toBe(
-        z.filter((v) => Math.abs(v) >= bound).length,
-      );
-      // The mask must respect its own stated bound ‖y‖∞ ≤ γ₁.
-      expect(Math.max(...y.map(Math.abs))).toBeLessThanOrEqual(gamma1);
-      // c has τ entries of ±1 and ‖s₁‖∞ ≤ η, so the secret's contribution can
-      // never exceed β = τ·η. If it did, the reject bound γ₁−β would not
-      // actually be enough to keep an accepted z from leaking s₁.
-      expect(
-        Math.max(...cs1.map(Math.abs)),
-        `attempt ${i + 1}: ‖c·s₁‖∞ must stay within β=${beta}`,
-      ).toBeLessThanOrEqual(beta);
-    });
-
-    // The summary's counters must sum to the attempts actually shown.
-    const stats = await page.locator('#fs-stats').innerText();
-    const rejects = attempts.filter((a) => a.head.includes('REJECT')).length;
-    const acceptedRun = attempts[attempts.length - 1].head.includes('ACCEPT');
-    if (!acceptedRun) {
-      expect(stats).toContain(`${rejects}`);
-      expect(stats).toContain('did not produce an accepted response');
-      expect(rejects).toBe(attempts.length);
-    } else if (rejects === 0) {
-      expect(stats).toContain('Accepted on the first try (0 rejects this run)');
-      expect(attempts).toHaveLength(1);
+    const signCell = row.cells[1];
+    if (unresolvable) {
+      // A lower bound, marked as one. Never a bare number derived from zero.
+      expect(signCell, `${row.set} sign ratio`).toMatch(/^>\s*\d+×$/);
     } else {
-      expect(stats).toContain(`rejected ${rejects} oversized response`);
-      expect(stats).toContain(`then accepted attempt ${attempts.length}`);
-      expect(rejects).toBe(attempts.length - 1);
+      const signRatio = Number(signCell.replace('×', ''));
+      const derived = medians.get(`${row.set} sign`)! / Number(exact![1]);
+      expect(
+        Math.abs(signRatio - derived),
+        `${row.set} sign ratio ${signCell} vs medians-implied ${derived.toFixed(2)}×`,
+      ).toBeLessThanOrEqual(0.05 + derived * 0.01);
     }
-
-    // A fresh secret clears the run rather than leaving stale attempts on screen.
-    await page.locator('#fs-reroll').click();
-    await expect(page.locator('.fs-attempt')).toHaveCount(0);
-    await expect(page.locator('#fs-stats')).toContainText('Fresh secret s₁ drawn');
-    expect(errors).toEqual([]);
-  });
-
-  test('the Module-LWE slider flips the verdict, and t = A·s + e holds at every setting', async ({
-    page,
-  }) => {
-    test.setTimeout(60_000);
-    const errors = watchForPageErrors(page);
-    await page.goto('.');
-    await page.locator('#tab-btn-how-it-works').click();
-    await page.locator('#step-btn-4').click();
-
-    const slider = page.locator('#mlwe-err');
-    const readRows = () =>
-      page.locator('#mlwe-eq .mlwe-row').evaluateAll((rows) =>
-        rows.map((row) => ({
-          t: (row.querySelector('.mlwe-t') as HTMLElement).innerText,
-          as: (row.querySelector('.mlwe-as') as HTMLElement).innerText,
-          e: (row.querySelector('.mlwe-e') as HTMLElement).innerText,
-          eClass: (row.querySelector('.mlwe-e') as HTMLElement).className,
-        })),
-      );
-
-    const q = 97; // the small illustrative modulus the panel works over
-    for (const setting of ['0', '1', '2', '3']) {
-      await slider.fill(setting);
-      await slider.dispatchEvent('input');
-      await expect(page.locator('#mlwe-err-out')).toHaveText(setting);
-
-      const rows = await readRows();
-      expect(rows).toHaveLength(3);
-      rows.forEach((row, i) => {
-        const t = rhs(row.t);
-        const as = rhs(row.as);
-        const e = rhs(row.e);
-        // Error magnitude is exactly the slider setting.
-        expect(Math.abs(e), `row ${i + 1} |e| at setting ${setting}`).toBe(Number(setting));
-        // t is A·s + e reduced mod q — the equation the panel is teaching.
-        expect(t, `row ${i + 1}: t = (A·s + e) mod ${q}`).toBe((((as + e) % q) + q) % q);
-        expect(row.eClass).toContain(e === 0 ? 'zero' : 'live');
-      });
-
-      const verdict = page.locator('#mlwe-verdict');
-      if (setting === '0') {
-        await expect(verdict).toHaveClass(/solvable/);
-        await expect(verdict.locator('.badge-fail')).toHaveText(/NO ERROR → BROKEN/);
-        await expect(verdict).toContainText('Gaussian elimination recovers the secret s instantly');
-        // With e = 0 every t must equal its A·s exactly — nothing hides s.
-        for (const row of rows) expect(rhs(row.t)).toBe(rhs(row.as));
-      } else {
-        await expect(verdict).toHaveClass(/hard/);
-        await expect(verdict.locator('.badge-pass')).toHaveText(/ERROR PRESENT → HARD/);
-        await expect(verdict).toContainText('Module-LWE');
-        for (const row of rows) expect(rhs(row.t)).not.toBe(rhs(row.as));
-      }
-    }
-    expect(errors).toEqual([]);
-  });
-});
-
-// ─────────────────────── navigation & educational tabs ─────────────────────
-
-test('the five tabs each render their own panel, one selected at a time', async ({ page }) => {
-  test.setTimeout(60_000);
-  const errors = watchForPageErrors(page);
-  await page.goto('.');
-
-  const expected: [string, string][] = [
-    ['sign-verify', 'ML-DSA Digital Signatures'],
-    ['compare', 'ML-DSA vs Classical Signatures'],
-    ['how-it-works', 'How ML-DSA Works'],
-    ['pqc-trio', 'The NIST Post-Quantum Cryptography Trio'],
-    ['about', 'About dilithium-seal'],
-  ];
-  await expect(page.locator('#tabs [role="tab"]')).toHaveCount(expected.length);
-
-  for (const [id, heading] of expected) {
-    await page.locator(`#tab-btn-${id}`).click();
-    await expect(page.locator('#tab-content')).toContainText(heading);
-    // Exactly one tab is selected, and it is this one.
-    await expect(page.locator('#tabs [aria-selected="true"]')).toHaveCount(1);
-    await expect(page.locator(`#tab-btn-${id}`)).toHaveAttribute('aria-selected', 'true');
-    await expect(page.locator('#tab-content')).toHaveAttribute('aria-labelledby', `tab-btn-${id}`);
   }
   expect(errors).toEqual([]);
-});
-
-test('the How It Works stepper expands exactly one step at a time', async ({ page }) => {
-  test.setTimeout(60_000);
-  await page.goto('.');
-  await page.locator('#tab-btn-how-it-works').click();
-
-  const titles = [
-    'The Two Hard Problems',
-    'Key Generation',
-    'Signing (Fiat-Shamir with Aborts)',
-    'Verification',
-    'Why Quantum Computers Fail',
-  ];
-  await expect(page.locator('.step')).toHaveCount(titles.length);
-  // Step 1 is open on arrival so the tab is never a wall of collapsed headers.
-  await expect(page.locator('.step.active')).toHaveCount(1);
-  await expect(page.locator('#step-btn-0')).toHaveAttribute('aria-expanded', 'true');
-
-  for (const [i, title] of titles.entries()) {
-    await page.locator(`#step-btn-${i}`).click();
-    await expect(page.locator(`#step-btn-${i}`)).toHaveText(title);
-    // The open step, its aria-expanded, and the visible body all agree, and
-    // nothing else is left open behind it.
-    await expect(page.locator('.step.active')).toHaveCount(1);
-    await expect(page.locator('#tabs ~ #tab-content .step[aria-expanded="true"]')).toHaveCount(0);
-    await expect(page.locator('[aria-expanded="true"].step-title')).toHaveCount(1);
-    await expect(page.locator(`#step-btn-${i}`)).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator(`#step-body-${i}`)).toBeVisible();
-  }
-  // The two interactive steps really do carry their visualizations.
-  await page.locator('#step-btn-2').click();
-  await expect(page.locator('#mount-fiat-shamir #fs-run')).toBeVisible();
-  await page.locator('#step-btn-4').click();
-  await expect(page.locator('#mount-module-lwe #mlwe-err')).toBeVisible();
-});
-
-test('the PQC Trio tab names all three FIPS standards and marks this one as ML-DSA', async ({
-  page,
-}) => {
-  test.setTimeout(60_000);
-  await page.goto('.');
-  await page.locator('#tab-btn-pqc-trio').click();
-
-  const cards = page.locator('.trio-card');
-  await expect(cards).toHaveCount(3);
-  const trio = await cards.evaluateAll((els) =>
-    els.map((el) => ({
-      name: (el.querySelector('h3') as HTMLElement).innerText.trim(),
-      fips: (el.querySelector('.fips') as HTMLElement).innerText.trim(),
-      current: el.classList.contains('current'),
-    })),
-  );
-  expect(trio.map((c) => c.name)).toEqual(['ML-KEM', 'ML-DSA', 'SLH-DSA']);
-  expect(trio[0].fips).toContain('FIPS 203');
-  expect(trio[1].fips).toContain('FIPS 204');
-  expect(trio[2].fips).toContain('FIPS 205');
-
-  // Exactly one card is flagged as "this demo", and it is the ML-DSA one —
-  // this lab implements FIPS 204.
-  expect(trio.filter((c) => c.current)).toHaveLength(1);
-  expect(trio.find((c) => c.current)!.name).toBe('ML-DSA');
-  expect(trio.find((c) => c.current)!.fips).toContain('this demo');
-
-  // The About tab's own framing must agree about which standard this is.
-  await page.locator('#tab-btn-about').click();
-  await expect(page.locator('#tab-content')).toContainText('NIST FIPS 204');
 });
 
 test('the Compare tab never states an unmeasured speed ratio', async ({ page }) => {

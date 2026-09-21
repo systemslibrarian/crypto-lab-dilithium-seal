@@ -1108,3 +1108,11 @@ a:focus-visible {
 /* Informational rows (challenge entropy, repetitions) are not algorithm
    parameters; the standard lists them "for informational purposes". */
 .param-informational th[scope='row'] { font-style: italic; }
+
+/* Benchmark tables: numeric columns read better right-aligned and tabular, so
+   digits line up between rows and a slow p95 is visible at a glance. */
+.bench-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+}
