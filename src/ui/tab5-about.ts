@@ -8,6 +8,7 @@
  */
 
 import { cite, renderStandardsStatus } from './provenance';
+import { renderImplementationIdentity } from './implementation';
 
 export function renderAbout(container: HTMLElement): void {
   container.innerHTML = `
@@ -78,11 +79,12 @@ export function renderAbout(container: HTMLElement): void {
       </ul>
     </div>
 
+    ${renderImplementationIdentity()}
+
     <div class="card">
-      <h2>Implementation</h2>
-      <p class="text-sm text-muted">ML-DSA operations are provided by <a href="https://www.npmjs.com/package/@noble/post-quantum" target="_blank" rel="noopener"><code>@noble/post-quantum</code></a> by Paul Miller. This is a pure JavaScript implementation — no WebAssembly or native modules — ensuring full browser compatibility.</p>
-      <p class="text-sm text-muted mt-1">SHA-256 hashing for document sealing uses the Web Crypto API (<code>crypto.subtle.digest</code>).</p>
-      <p class="text-sm text-muted mt-1">This demo runs fully offline — no external CDN dependencies at runtime.</p>
+      <h2>Supporting operations</h2>
+      <p class="text-sm text-muted">SHA-256 hashing for document sealing uses the Web Crypto API (<code>crypto.subtle.digest</code>). It is a convenience integrity check, not the security: only the ML-DSA signature proves authenticity.</p>
+      <p class="text-sm text-muted mt-1">This demo runs fully offline after load — no CDN, no analytics, no runtime network request of any kind. A browser test drives the whole demo with off-origin requests blocked and asserts none was attempted.</p>
     </div>
 
     <div class="card card-centered">

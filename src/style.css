@@ -1029,3 +1029,23 @@ a:focus-visible {
 @media (max-width: 560px) {
   .std-strip-sep { display: block; height: 0; overflow: hidden; }
 }
+
+/* ── Implementation identity and limitations ──────────────────────────────── */
+
+.impl-badge {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+/* The lockfile integrity hash is a long unbreakable base64 run. Without this it
+   pushes the table past the viewport at 380px (WCAG 1.4.10). */
+.impl-integrity { overflow-wrap: anywhere; word-break: break-all; }
+
+.limitation { margin-bottom: 1rem; }
+.limitation:last-child { margin-bottom: 0; }
+.limitation-title {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}

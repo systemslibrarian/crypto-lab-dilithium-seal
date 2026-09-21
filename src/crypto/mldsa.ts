@@ -18,6 +18,7 @@
  */
 
 import { ml_dsa44, ml_dsa65, ml_dsa87 } from '@noble/post-quantum/ml-dsa.js';
+import { requireSecureRandomness, secureRandomBytes } from './random';
 
 export type MLDSAVariant = 'ml-dsa-44' | 'ml-dsa-65' | 'ml-dsa-87';
 
@@ -55,9 +56,15 @@ const VARIANT_MAP = {
   'ml-dsa-87': ml_dsa87,
 } as const;
 
+/**
+ * FIPS 204 §3.6.1: the 256-bit seed ξ "shall be a fresh (i.e., not previously
+ * used) random value generated using an approved RBG". `secureRandomBytes`
+ * throws rather than return anything less, so a browser without the Web Crypto
+ * API produces an error here instead of a guessable key.
+ */
 export async function generateKeyPair(variant: MLDSAVariant): Promise<MLDSAKeyPair> {
   const impl = VARIANT_MAP[variant];
-  const seed = crypto.getRandomValues(new Uint8Array(32));
+  const seed = secureRandomBytes(32);
   const keys = impl.keygen(seed);
   return {
     publicKey: keys.publicKey,
@@ -66,11 +73,23 @@ export async function generateKeyPair(variant: MLDSAVariant): Promise<MLDSAKeyPa
   };
 }
 
+/**
+ * Sign with the default HEDGED variant of FIPS 204 Algorithm 2.
+ *
+ * Hedged, not deterministic: the library draws a 32-byte `rnd` per signature,
+ * which §3.6.1 describes as a countermeasure against side-channel and fault
+ * attacks on deterministic signing. That makes signing depend on the RBG, so
+ * the guard below is not belt-and-braces — without randomness this operation
+ * genuinely cannot proceed, and it must stop rather than silently fall back to
+ * the deterministic variant, which has a different security posture the reader
+ * was never told about.
+ */
 export async function sign(
   privateKey: Uint8Array,
   message: Uint8Array,
   variant: MLDSAVariant
 ): Promise<MLDSASignResult> {
+  requireSecureRandomness('ML-DSA signing (hedged variant)');
   const impl = VARIANT_MAP[variant];
   const start = performance.now();
   // noble argument order: (message, secretKey).

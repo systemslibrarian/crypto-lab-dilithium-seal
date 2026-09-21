@@ -75,6 +75,62 @@ Drafts are labelled as drafts. NIST IR 8547, the transition-timeline document,
 is still an **Initial Public Draft**, and the page says so wherever its dates
 appear.
 
+## Runtime and Implementation Assurances
+
+The page states exactly what is executing, and every value is derived from
+`package-lock.json` at build time — so it cannot drift from what `npm ci`
+installed, and it is never the `^0.7.1` range from `package.json`, which is not
+a fact about anything that shipped.
+
+| | |
+|---|---|
+| Library | `@noble/post-quantum`, exact version + npm integrity hash |
+| Implementation | Pure JavaScript — no WebAssembly, no native module |
+| Randomness | `crypto.getRandomValues` (Web Crypto API), **no fallback** |
+| Hashing inside the crypto path | `@noble/hashes` (SHAKE128/256), version + integrity hash |
+| Independent security audit | **None.** The library states "has not been independently audited yet" |
+| Self-audit | v0.6.1 (April 2026) — **earlier than the version shipped**, so it does not cover it |
+| CMVP / FIPS 140 validation | **None** |
+
+The audit claim is pinned by a test that reads the library's own README, so if
+it is ever independently audited the suite fails and a human updates the claim
+rather than the page silently under- or over-stating the assurance.
+
+### Fails closed on randomness
+
+`src/crypto/random.ts` is the only source of randomness for real operations, and
+it has no fallback path. If `crypto.getRandomValues` is missing, throws, or is
+stubbed to return zeros, key generation and hedged signing **stop** and the page
+says why. Verification keeps working, because it needs no randomness.
+
+`Math.random` appears exactly once in this repository — in
+`src/ui/fiat-shamir-viz.ts`, the reduced teaching model. A test scans every
+source file (with comments and string literals stripped, so the rule does not
+fire on its own documentation), allows that one file, and asserts the allowance
+is not dead.
+
+### Limitations, on the page rather than in a comment
+
+Six, each rendered in full on the About tab, because each one changes what you
+should conclude from a ✓ VERIFIED badge:
+
+1. **JavaScript execution is not guaranteed constant-time.** Quoted from the
+   library: it "does not claim constant-time execution". ML-DSA signing uses a
+   rejection loop and early-exit norm checks whose execution depends on
+   secret-key state.
+2. **Secrets cannot be reliably erased from garbage-collected memory** — which
+   is what FIPS 204 §3.6.3 requires.
+3. **Browser extensions and a compromised page are outside the trust boundary.**
+   The CSP narrows what injected content can load; it cannot defend against code
+   the browser was told to run.
+4. **Passing known-answer vectors is not an audit and not a validation.**
+5. **A valid signature does not by itself establish who signed** — FIPS 204 §3.5:
+   binding a public key to an identity requires proof of possession.
+6. **Key generation and signing depend on the browser's RBG.**
+
+A browser test asserts all six render with substantive text, and that no page
+ever calls the demo NIST-validated, CMVP-validated or FIPS-certified.
+
 ## FIPS 204 Conformance Evidence
 
 The signing and verification path is checked against **NIST's own ACVP vectors**
