@@ -481,6 +481,7 @@ injected markup from being written into the page in the first place.
 ## What Can Go Wrong
 
 - **Variable-time signing leaks timing.** ML-DSA uses a rejection-sampling loop, so signing time varies; without hardening this can be a side-channel in adversarial environments.
+- **Leakage-assisted signing attacks require an explicit leakage model.** [ElGhamrawy et al., ePrint 2026/2091 (September 22, 2026)](https://eprint.iacr.org/2026/2091) analyze ML-DSA signing information leakage via ILWE and report a lower signature count in a noise-free attack setting. This preprint does not establish key recovery from ordinary signatures without side-channel information; the browser demo neither captures traces nor reproduces its estimates.
 - **Large keys and signatures.** ML-DSA public keys and signatures are far larger than Ed25519 or ECDSA, which can strain certificates, handshakes, and storage during migration.
 - **Randomness and hedged signing.** Faulty randomness in the hedged variant, or fault injection during signing, can weaken security; deterministic and hedged modes carry different tradeoffs.
 - **Implementation immaturity.** ML-DSA toolchains, libraries, and hardware support are still maturing relative to classical signatures, raising interoperability and side-channel risk.

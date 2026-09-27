@@ -46,6 +46,11 @@ export function renderAbout(container: HTMLElement): void {
     ${renderStandardsStatus()}
 
     <div class="card">
+      <h2>Implementation leakage research</h2>
+      <p class="text-sm text-muted"><a href="https://eprint.iacr.org/2026/2091" target="_blank" rel="noopener">ElGhamrawy et al., ePrint 2026/2091 (September 22, 2026)</a> study leakage-assisted ML-DSA signing via ILWE under a noise-free attack model. This preprint assumes leaked signing information; it does not demonstrate recovery from ordinary signatures alone. The ML-DSA operations here are real, but this page does not measure physical leakage or reproduce that attack.</p>
+    </div>
+
+    <div class="card">
       <h2>References</h2>
       <ul class="text-sm text-muted ref-list">
         <li><a href="https://csrc.nist.gov/pubs/fips/204/final" target="_blank" rel="noopener">NIST FIPS 204 — ML-DSA (Module-Lattice-Based Digital Signature Standard)</a></li>
