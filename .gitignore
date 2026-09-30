@@ -6,3 +6,4 @@ dist/
 /sbom.cdx.json
 /lighthouse-report/
 /.vitest/
+chat.md
