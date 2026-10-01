@@ -4,9 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Interactive browser demo of ML-DSA, the NIST FIPS 204 post-quantum digital signature standard, standardized from the CRYSTALS-Dilithium submission. Sign, verify, seal documents, and compare schemes." />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#f6f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0d1117" />
     <title>dilithium-seal — ML-DSA | NIST FIPS 204</title>
     <!--
       Content-Security-Policy. See build/csp.ts for why this is a <meta> rather
@@ -38,26 +37,13 @@
       content="default-src 'none'; script-src 'self' {{CSP_SCRIPT_HASHES}}; style-src 'self' {{CSP_STYLE_HASHES}}; img-src 'self' data:; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"
     />
     <script>
-      // Dark by default, light when the visitor's OS asks for it.
-      //
-      // The shared Crypto Lab header hides in-page theme toggles fleet-wide, so
-      // this page has no control of its own — which made `prefers-color-scheme`
-      // the only control a visitor has, and it was being ignored. A complete
-      // light palette already existed in the stylesheet and no visitor could
-      // reach it. Honouring the OS setting makes it reachable; the default for
-      // anyone who has not asked is unchanged.
-      //
-      // Runs before first paint so there is no flash of the wrong palette.
+      // Dark is the only theme. Pin it before first paint, and overwrite any
+      // 'light' a visitor stored back when the header carried a theme toggle.
       (function () {
-        var light = false;
         try {
-          light = window.matchMedia('(prefers-color-scheme: light)').matches;
+          localStorage.setItem('theme', 'dark');
         } catch (e) {}
-        var theme = light ? 'light' : 'dark';
-        try {
-          localStorage.setItem('theme', theme);
-        } catch (e) {}
-        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme', 'dark');
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔏</text></svg>" />

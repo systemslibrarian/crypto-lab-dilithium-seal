@@ -135,22 +135,22 @@ async function expectNotBlank(page: Page, label: string): Promise<void> {
  * assumed — and it is also scanned, because a reader who lands here and reads
  * nothing else sees exactly this.
  */
-export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
+export async function boot(page: Page, os: 'dark' | 'light'): Promise<void> {
   // A click on a control that never becomes actionable otherwise burns the
   // whole test timeout and reports nothing useful. 20s turns that silent hang
   // into a named failure naming the locator.
   page.setDefaultTimeout(20_000);
-  // The theme now follows `prefers-color-scheme`, which is the only control a
-  // visitor has (the shared header hides in-page toggles fleet-wide). So it is
-  // driven the way a visitor drives it — through the media query — rather than
-  // by writing localStorage, which the page no longer reads for this.
-  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: theme });
+  // Dark is the only theme (the fleet contract, audits/_MASTER-TEMPLATE.md
+  // §3.2 in the catalog repo). `os` is the visitor's OS preference, driven
+  // through the media query the way a visitor drives it. A light-preference OS
+  // must still get dark: that run is the proof the pin ignores the preference.
+  await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: os });
   await page.goto('.');
   expect(
     await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches),
     'reduced-motion emulation must actually be in effect'
   ).toBe(true);
-  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
   // Every tab panel is rendered into an empty `#tab-content` by `initTabs`, so
   // a navigation that resolves proves nothing.
@@ -185,7 +185,7 @@ export async function boot(page: Page, theme: 'dark' | 'light'): Promise<void> {
   await expect(page.locator('#seal-json-input')).toHaveValue('');
 
   await settle(page);
-  await expectNotBlank(page, `${theme} first paint`);
+  await expectNotBlank(page, `${os}-OS first paint`);
 }
 
 /**
