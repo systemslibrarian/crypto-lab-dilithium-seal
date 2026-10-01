@@ -158,10 +158,9 @@ lower bounds rather than dividing by a rounded zero.
 
 ### 16. There is no in-page theme control
 
-The shared Crypto Lab header hides in-page theme toggles across the fleet, so
-the only control is the operating system's `prefers-color-scheme`, which the
-page honours. A visitor who wants a light page in a dark-set OS cannot get one
-here.
+The page is dark for every visitor, the fleet's single theme, and it ignores
+the operating system's `prefers-color-scheme` on purpose. A visitor who wants a
+light page cannot get one here.
 
 ---
 

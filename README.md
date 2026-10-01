@@ -155,14 +155,19 @@ that the repo's own axe gate had been blind to:
 - **Discoverability** — the security policy, threat model, limitations, sources
   and implementation identity are all reachable from the page.
 
-### Dark and light themes
+### One theme: dark
 
-The stylesheet always carried a complete light palette that **no visitor could
-reach** — the page pinned dark unconditionally. Since the shared Crypto Lab
-header hides in-page theme toggles fleet-wide, `prefers-color-scheme` is the
-only control a visitor has, and it was being ignored. It is now honoured, and
-the axe gate runs both themes at both widths — which immediately found the
-light-theme amber failing 1.4.3 at 4.27:1 on a small bold label.
+The page is dark for every visitor, pinned before first paint, whatever the
+operating system prefers. That is the Crypto Lab fleet contract: dark is the
+only theme, and `prefers-color-scheme` is never read. For a while this lab
+honoured the OS setting so that its light palette could be reached; that
+put it out of step with every other lab, and it was returned to the contract on
+2026-10-01. The stylesheet's `[data-theme='light']` block remains as dead code,
+as it does across the fleet.
+
+The axe gate still runs four times, at both widths under a dark-preference and
+a light-preference OS, and asserts the page is dark in all four. The light-OS
+runs are the proof that the preference is ignored.
 
 ## Reproducible Benchmark Evidence
 

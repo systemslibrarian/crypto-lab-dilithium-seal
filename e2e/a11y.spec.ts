@@ -24,8 +24,9 @@ import {
  * accepted attempt are on screen, reset to a fresh secret, both `<details>`
  * opened through their summaries, and the Module-LWE slider driven to both ends
  * of its verdict; the PQC Trio and About tabs; and the tablist wrapped back to
- * the first tab with ArrowRight. Every one of those states is scanned, in both
- * themes, at desktop and phone width.
+ * the first tab with ArrowRight. Every one of those states is scanned at
+ * desktop and phone width, under a dark-preference and a light-preference OS.
+ * The page is dark under both; the light-OS runs prove the pin holds.
  *
  * See `gate.ts` for why nothing is injected into the page, why no panel is
  * force-revealed, why the lab's defaults are asserted rather than assumed, and
@@ -41,20 +42,20 @@ import {
  * states the whole drive reached.
  */
 
-for (const theme of ['dark', 'light'] as const) {
-  test(`no WCAG A/AA violations in ${theme} theme`, async ({ page }) => {
+for (const os of ['dark', 'light'] as const) {
+  test(`no WCAG A/AA violations, ${os}-preference OS`, async ({ page }) => {
     test.setTimeout(900_000);
-    await boot(page, theme);
-    await driveAllStates(page, theme);
+    await boot(page, os);
+    await driveAllStates(page, `${os}-OS`);
     expectBaselineNotStale();
     reportCollected();
   });
 
-  test(`no WCAG A/AA violations in ${theme} theme at 380px`, async ({ page }) => {
+  test(`no WCAG A/AA violations, ${os}-preference OS, at 380px`, async ({ page }) => {
     test.setTimeout(900_000);
     await page.setViewportSize(NARROW);
-    await boot(page, theme);
-    await driveAllStates(page, `${theme} @380px`);
+    await boot(page, os);
+    await driveAllStates(page, `${os}-OS @380px`);
     expectBaselineNotStale();
     reportCollected();
   });
