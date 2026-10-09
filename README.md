@@ -75,6 +75,17 @@ Drafts are labelled as drafts. NIST IR 8547, the transition-timeline document,
 is still an **Initial Public Draft**, and the page says so wherever its dates
 appear.
 
+## Publishing a reviewed revision
+
+GitHub Pages is published by `.github/workflows/deploy.yml` after its audit,
+action-pin, unit/vector, reproducible-build, browser and Lighthouse gates pass.
+From an authenticated GitHub CLI, `npm run deploy` requests that existing
+workflow on the pushed, reviewed `main` branch. It does not upload uncommitted
+local code. A successful request means the run was queued; check the run,
+Pages deployment and live deployment-verification job before calling it
+published. The separate `gh-pages` npm publisher has been removed because its
+unused dependency chain introduced GHSA-vfj7-8cjw-p6xm.
+
 ## Project Assurance and Quality Gates
 
 | Document | What it is for |
