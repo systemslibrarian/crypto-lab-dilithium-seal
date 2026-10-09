@@ -2,7 +2,7 @@
   "name": "dilithium-seal",
   "version": "1.0.0",
   "private": true,
-  "description": "Browser-based ML-DSA (CRYSTALS-Dilithium) cryptographic demo — NIST FIPS 204",
+  "description": "Browser-based ML-DSA (CRYSTALS-Dilithium) cryptographic demo \u2014 NIST FIPS 204",
   "type": "module",
   "engines": {
     "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
@@ -23,7 +23,7 @@
     "lighthouse": "node scripts/lighthouse.mjs",
     "vectors:update": "node scripts/fetch-acvp-vectors.mjs --write",
     "test:a11y": "playwright test",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "gh workflow run deploy.yml --repo systemslibrarian/crypto-lab-dilithium-seal --ref main"
   },
   "dependencies": {
     "@noble/post-quantum": "^0.7.1"
@@ -34,7 +34,6 @@
     "@types/node": "^26.6.3",
     "chrome-launcher": "^1.2.1",
     "fast-check": "^4.10.2",
-    "gh-pages": "^6.3.0",
     "lighthouse": "^13.5.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.1",
