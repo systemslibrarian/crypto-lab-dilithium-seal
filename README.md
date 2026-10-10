@@ -13,6 +13,10 @@ The "How It Works" tab now opens with a plain-language "prove you know a secret 
 - Use it for browser-based training or proof-of-concept work that compares classical and post-quantum signatures. It fits because the demo exposes parameter-set tradeoffs and benchmark behavior.
 - Do not use this demo implementation as a production key-management system. It is educational and does not provide hardened storage, policy controls, or operational safeguards.
 
+## Document Seal Verification Scope
+
+The seal signs only the UTF-8 document content. A normal successful verdict means the content signature verifies under the public key included in that package; it does not authenticate the signer label or timestamp, which are unsigned/unverified. The package alone does not bind that key to a trusted identity. Both sealing and pasted-JSON verification show this scope, including after metadata-only edits. The existing identity-substitution lesson remains applicable. The stored SHA-256 hash is an unsigned convenience check: editing it can cause a hash mismatch even if the content signature remains valid.
+
 ## Live Demo
 
 **[systemslibrarian.github.io/crypto-lab-dilithium-seal](https://systemslibrarian.github.io/crypto-lab-dilithium-seal/)**

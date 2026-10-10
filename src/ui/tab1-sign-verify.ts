@@ -409,8 +409,8 @@ async function handleSeal(): Promise<void> {
     <div class="output">${escapeHTML(lastSealedDoc.contentHash)}</div>
     <div class="text-sm"><strong>Signature</strong> (${atob(lastSealedDoc.signature).length} bytes, truncated): <span class="text-muted">— this is what proves authenticity</span></div>
     <div class="output">${escapeHTML(lastSealedDoc.signature.slice(0, 80))}…</div>
-    <div class="mt-1"><span class="badge badge-pass">✓ SEALED & VERIFIED</span></div>
-    <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)}</p>
+    <div class="mt-1"><span class="badge ${result.valid ? 'badge-pass' : 'badge-fail'}">${result.valid ? '✓ SEALED & VERIFIED — CONTENT ONLY' : '✗ SEAL VERIFICATION FAILED'}</span></div>
+    <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)} ${cite('identityBinding')}</p>
     <p class="text-sm text-muted">Now press <strong>Tamper &amp; Verify</strong> to see which of these two actually catches an edit.</p>
   `;
 
@@ -602,12 +602,12 @@ async function handleVerifySealJSON(): Promise<void> {
   const result = await verifyDocument(doc);
 
   const badge = result.valid
-    ? '<span class="badge badge-pass">✓ VERIFIED</span>'
+    ? '<span class="badge badge-pass">✓ VERIFIED — CONTENT ONLY</span>'
     : '<span class="badge badge-fail">✗ FAILED</span>';
 
   output.innerHTML = `
     <div class="mt-1">${badge}</div>
-    <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)}</p>
+    <p class="text-sm text-muted mt-1">${escapeHTML(result.explanation)} ${cite('identityBinding')}</p>
     <p class="text-sm">Content intact: ${result.contentIntact ? '<span class="text-green">yes</span>' : '<span class="text-red">no</span>'} | Signature valid: ${result.signatureValid ? '<span class="text-green">yes</span>' : '<span class="text-red">no</span>'}</p>
   `;
 }

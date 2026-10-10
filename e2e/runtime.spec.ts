@@ -201,6 +201,6 @@ test.describe('failing closed on randomness', () => {
     await page.goto('.');
     await page.locator('#seal-json-input').fill(exported);
     await page.locator('#btn-verify-seal').click();
-    await expect(page.locator('#seal-verify-output .badge-pass')).toHaveText('✓ VERIFIED');
+    await expect(page.locator('#seal-verify-output .badge-pass')).toHaveText('✓ VERIFIED — CONTENT ONLY');
   });
 });

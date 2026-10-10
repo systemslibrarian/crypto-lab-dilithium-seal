@@ -401,7 +401,9 @@ test('sealing produces a package whose hash, key and signature sizes all check o
   const seal = page.locator('#seal-output');
   await expect(seal).toContainText('SEALED & VERIFIED', { timeout: 30_000 });
   await expect(seal.locator('.badge-pass')).toHaveText(/SEALED & VERIFIED/);
-  await expect(seal).toContainText(`Signed by "${signer}"`);
+  await expect(seal).toContainText('Signer label and timestamp are unsigned/unverified');
+  await expect(seal).not.toContainText('Signed by');
+  await expect(seal).toContainText('not bound to a trusted identity');
   await expect(seal).toContainText('ML-DSA-65 signature is valid');
 
   const sealedText = await seal.innerText();
