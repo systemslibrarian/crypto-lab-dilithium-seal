@@ -23,6 +23,12 @@ export interface VerifyResult {
   explanation: string;
 }
 
+const VERIFICATION_SCOPE = 'Only content is signed. Signer label and timestamp are unsigned/unverified. The included public key is not bound to a trusted identity by this package.';
+
+function explainScope(explanation: string): string {
+  return `${explanation} ${VERIFICATION_SCOPE}`;
+}
+
 function uint8ToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -73,7 +79,7 @@ export async function sealDocument(
 
 export async function verifyDocument(doc: SealedDocument): Promise<VerifyResult> {
   if (!doc || typeof doc.content !== 'string' || typeof doc.publicKey !== 'string' || typeof doc.signature !== 'string' || typeof doc.variant !== 'string') {
-    return { valid: false, contentIntact: false, signatureValid: false, explanation: 'Document is missing required fields or has invalid format.' };
+    return { valid: false, contentIntact: false, signatureValid: false, explanation: explainScope('Document is missing required fields or has invalid format.') };
   }
 
   try {
@@ -95,17 +101,17 @@ export async function verifyDocument(doc: SealedDocument): Promise<VerifyResult>
 
     let explanation: string;
     if (valid) {
-      explanation = `Document integrity verified. Content hash matches and ML-DSA-${doc.variant.split('-')[2]} signature is valid. Signed by "${doc.signerLabel}" at ${doc.timestamp}.`;
+      explanation = `Document integrity verified. Content hash matches and ML-DSA-${doc.variant.split('-')[2]} signature is valid under the included public key.`;
     } else if (!contentIntact && !signatureValid) {
       explanation = 'Document has been tampered with: content hash mismatch AND signature verification failed.';
     } else if (!contentIntact) {
-      explanation = 'Content integrity check failed: the SHA-256 hash of the current content does not match the recorded hash. The document text was modified after signing.';
+      explanation = 'Content integrity check failed: the SHA-256 hash of the current content does not match the recorded hash. The recorded hash or content may have changed; signature validity is reported separately.';
     } else {
       explanation = 'Signature verification failed: the ML-DSA signature does not validate against the public key and message. The signature or public key may have been altered.';
     }
 
-    return { valid, contentIntact, signatureValid, explanation };
+    return { valid, contentIntact, signatureValid, explanation: explainScope(explanation) };
   } catch (err) {
-    return { valid: false, contentIntact: false, signatureValid: false, explanation: 'Verification aborted due to decoding or processing error.' };
+    return { valid: false, contentIntact: false, signatureValid: false, explanation: explainScope('Verification aborted due to decoding or processing error.') };
   }
 }

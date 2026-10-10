@@ -595,7 +595,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
 
   // ── Tab 1: sealing ───────────────────────────────────────────────────────
   await page.locator('#btn-seal').click();
-  await expect(page.locator('#seal-output .badge-pass')).toHaveText('✓ SEALED & VERIFIED');
+  await expect(page.locator('#seal-output .badge-pass')).toHaveText('✓ SEALED & VERIFIED — CONTENT ONLY');
   await expect(page.locator('#btn-export-seal')).toBeEnabled();
   await scanAt('document sealed');
 
@@ -623,7 +623,7 @@ export async function driveAllStates(page: Page, theme: string): Promise<void> {
   const exported = await readDownload(download);
   await page.locator('#seal-json-input').fill(exported);
   await page.locator('#btn-verify-seal').click();
-  await expect(page.locator('#seal-verify-output .badge-pass')).toHaveText('✓ VERIFIED');
+  await expect(page.locator('#seal-verify-output .badge-pass')).toHaveText('✓ VERIFIED — CONTENT ONLY');
   await scanAt('exported seal pasted back and verified');
 
   // A seal whose content no longer matches what was signed.
