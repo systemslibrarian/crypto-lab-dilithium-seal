@@ -213,7 +213,7 @@ export function renderStandardsStatus(): string {
           <tbody>${sourceRows()}</tbody>
       </table>
       <p class="text-sm text-muted mt-1">
-        Documents marked other than “Final” are drafts or competition-era submissions. Nothing on
+        Status labels distinguish final standards from research revisions, drafts, errata proposals and competition-era submissions. Nothing on
         this page presents a draft or a round-3 parameter as final FIPS 204.
       </p>
     </div>

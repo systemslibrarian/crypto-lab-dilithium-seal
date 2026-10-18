@@ -59,6 +59,10 @@ ones, and the fact that the correction is not yet official.
   3.85."** Those are FIPS 204 Table 1's numbers, not the submission's, and NIST
   has since recorded them as inaccurate.
 
+### Research update — 16 October 2026
+
+[Zhang, Zhou and Qu, ePrint 2026/607](https://eprint.iacr.org/2026/607), a revision of TCHES 2026 research, correct and refine MSIS security estimates for Dilithium. Their estimates are 3.65–6.09 bits below their conservative Core-SVP baseline: model-dependent extrapolation supported by lattice experiments, not demonstrated production-key recovery. A dated source note appears beside the historical Core-SVP explanation in **How It Works**. It does not revise FIPS 204 categories or the implemented parameters, and the reported difference must not be subtracted from unrelated historical estimates. This demo does not execute the research attack. This focused research update is separate from the standards review date above.
+
 ### CRYSTALS-Dilithium is not a synonym for ML-DSA
 
 The difference is visible in bytes this demo produces:
