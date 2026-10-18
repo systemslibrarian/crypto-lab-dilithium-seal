@@ -18,7 +18,7 @@
  * makes that kind of claim impossible to write down casually.
  */
 
-export type SourceKind = 'standard' | 'errata' | 'vectors' | 'submission' | 'guidance' | 'library';
+export type SourceKind = 'standard' | 'errata' | 'vectors' | 'submission' | 'guidance' | 'library' | 'research';
 
 export interface Source {
   id: string;
@@ -68,6 +68,17 @@ export const FIPS_204_EDITION = {
 } as const;
 
 export const SOURCES: Source[] = [
+  {
+    id: 'msis-2026',
+    short: 'MSIS research, 16 Oct 2026',
+    title: 'Refined Approx-SVP Rank Reduction Conditions and Adaptive Lattice Reduction for MSIS Security Estimation',
+    publisher: 'Zhang, Zhou and Qu — IACR ePrint / TCHES',
+    url: 'https://eprint.iacr.org/2026/607',
+    kind: 'research',
+    published: '2026-10-16',
+    status: 'Revision of TCHES 2026 research; model-dependent estimates, not a standards change',
+    identifier: 'ePrint 2026/607, revision 16 October 2026; doi:10.46586/tches.v2026.i4.397-422',
+  },
   {
     id: 'fips204',
     short: 'FIPS 204',
@@ -170,6 +181,12 @@ export interface Claim {
 }
 
 export const CLAIMS: Record<string, Claim> = {
+  refinedMsis: {
+    id: 'refinedMsis',
+    statement: 'The 16 October 2026 revision reports Dilithium attack-cost estimates 3.65–6.09 bits below its conservative Core-SVP baseline; these are model-dependent estimates, not production-key recovery.',
+    sourceId: 'msis-2026',
+    locator: 'Abstract and revised MSIS security-estimation analysis',
+  },
   sizes: {
     id: 'sizes',
     statement:

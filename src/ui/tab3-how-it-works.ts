@@ -130,6 +130,8 @@ const STEPS: StepInfo[] = [
 
       <div id="mount-module-lwe" class="viz-mount"></div>
 
+        <p class="mt-1 annot" id="msis-research-note"><span class="annot-label">Research update — 16 October 2026:</span> Zhang, Zhou and Qu report Dilithium attack-cost estimates 3.65–6.09 bits below their conservative Core-SVP baseline ${cite('refinedMsis')}. This revision of TCHES 2026 research is model-dependent extrapolation supported by lattice experiments, not demonstrated production-key recovery. It does not change FIPS 204 security categories. Do not subtract that difference from the unrelated historical estimates below. This demo does not execute the research attack.</p>
+
       <details class="math-details">
         <summary>Show the complexity comparison</summary>
         <div class="math-block">
