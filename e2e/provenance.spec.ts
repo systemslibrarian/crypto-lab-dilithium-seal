@@ -65,12 +65,16 @@ test.describe('the provenance panel', () => {
     await expect(panel).toContainText('ARE NOT official changes');
   });
 
-  test('lists every source with its status, and marks drafts as drafts', async ({ page }) => {
+  test('lists source status and the final transition report with its policy scope', async ({ page }) => {
     await page.goto('.');
     await openAbout(page);
     const body = page.locator('#tab-content');
     await expect(body).toContainText('NIST IR 8547');
-    await expect(body).toContainText('Initial Public Draft');
+    const transitionSource = body.locator('tr').filter({ has: page.locator('th a[href="https://csrc.nist.gov/pubs/ir/8547/final"]') });
+    await expect(transitionSource).toContainText('27 October 2026');
+    await expect(transitionSource).toContainText('Final');
+    await expect(body).not.toContainText('Initial Public Draft');
+    await expect(body).toContainText('not a universal private-sector deadline');
     await expect(body).toContainText('Competition submission');
     // Every source link must be external, labelled, and safe.
     const links = page.locator('#tab-content a[href^="https://"]');

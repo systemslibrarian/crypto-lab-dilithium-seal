@@ -52,7 +52,9 @@ describe('sources', () => {
   it('mark every non-final document as such', () => {
     // A draft or a competition submission presented as final is exactly the
     // failure Priority 4 exists to prevent.
-    expect(source('nistir8547').status).toMatch(/Draft/i);
+    expect(source('nistir8547').status).toBeUndefined();
+    expect(source('nistir8547').url).toBe('https://csrc.nist.gov/pubs/ir/8547/final');
+    expect(source('nistir8547').published).toBe('2026-10-27');
     expect(source('dilithium-r3').status).toMatch(/submission|superseded/i);
     expect(source('fips204-errata').status).toMatch(/not official changes/i);
     // ...and every FIPS standard as final.

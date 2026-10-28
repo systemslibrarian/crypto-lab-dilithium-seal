@@ -79,9 +79,7 @@ signature. A test signs with each parameter set and asserts the length is the
 FIPS 204 one and *not* the round-3 one, so this stays demonstrated rather than
 asserted.
 
-Drafts are labelled as drafts. NIST IR 8547, the transition-timeline document,
-is still an **Initial Public Draft**, and the page says so wherever its dates
-appear.
+[NIST IR 8547](https://csrc.nist.gov/pubs/ir/8547/final) is a **final report**, published 27 October 2026. Its §4 schedule covers quantum-vulnerable public-key algorithms generally: deprecated after 2030 and disallowed under NIST standards and guidelines after 2035. Earlier targets remain for prioritized federal systems: key establishment by 31 December 2030 and digital signatures by 31 December 2031. These are not universal private-sector deadlines. The visible source registry and PQC Trio panel reflect this focused update; the broader standards-review date is unchanged.
 
 ## Publishing a reviewed revision
 

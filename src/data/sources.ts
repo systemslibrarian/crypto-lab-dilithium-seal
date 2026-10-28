@@ -149,13 +149,13 @@ export const SOURCES: Source[] = [
   },
   {
     id: 'nistir8547',
-    short: 'NIST IR 8547 (draft)',
+    short: 'NIST IR 8547 (final)',
     title: 'NIST IR 8547: Transition to Post-Quantum Cryptography Standards',
     publisher: 'NIST',
-    url: 'https://csrc.nist.gov/pubs/ir/8547/ipd',
+    url: 'https://csrc.nist.gov/pubs/ir/8547/final',
     kind: 'guidance',
-    published: '2024-11-12',
-    status: 'Initial Public Draft — not final guidance',
+    published: '2026-10-27',
+    identifier: 'doi:10.6028/NIST.IR.8547',
   },
   {
     id: 'noble-pq',
@@ -316,13 +316,13 @@ export const CLAIMS: Record<string, Claim> = {
   transition: {
     id: 'transition',
     statement:
-      'NIST’s expected transition timeline deprecates 112-bit-strength classical algorithms after 2030 and disallows them after 2035.',
+      'NIST’s final transition report deprecates quantum-vulnerable public-key algorithms after 2030 and disallows their use under NIST standards and guidelines after 2035.',
     sourceId: 'nistir8547',
-    locator: 'Tables 1 and 2',
+    locator: '§4, Tables 2 and 4',
     qualifiedBy: {
       sourceId: 'nistir8547',
-      locator: 'status',
-      note: 'NIST IR 8547 is an Initial Public Draft. These dates are proposed, not final guidance.',
+      locator: '§4',
+      note: 'Final report published 27 October 2026. Earlier targets remain for prioritized federal systems: key establishment by 31 December 2030 and signatures by 31 December 2031. This is not a universal private-sector deadline.',
     },
   },
   interop: {

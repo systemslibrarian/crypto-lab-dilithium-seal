@@ -65,7 +65,7 @@ is not a validation.
 | 4.3 | Standards last reviewed 2026-09-20 | — | `sources.test.ts` (real, non-future date); `provenance.spec.ts` (renders) | A date a human asserts. It will go stale without anyone noticing |
 | 4.4 | "CRYSTALS-Dilithium" and "ML-DSA" are not interchangeable | Round-3 spec vs FIPS 204 | `sources.test.ts` and `provenance.spec.ts` — the page signs and asserts the FIPS 204 size (3309/4627) and **not** the round-3 size (3293/4595) | — |
 | 4.5 | The "165-bit" figure is a **round-3 Core-SVP estimate**, not a FIPS 204 property | Round-3 spec Table 1 | `provenance.spec.ts` forbids the affirmative ML-DSA framing and requires the round-3 attribution wherever the number appears | — |
-| 4.6 | Drafts are labelled as drafts | NIST IR 8547 status page | `sources.test.ts`, `provenance.spec.ts` | NIST IR 8547 remains an Initial Public Draft; its dates are proposed |
+| 4.6 | Source publication status is distinguished from policy scope | NIST IR 8547 final, 27 October 2026, §4 | `sources.test.ts`, `provenance.spec.ts` | Final report; NIST-wide algorithm transition dates do not replace earlier prioritized federal targets or establish universal private-sector deadlines |
 | 4.7 | Every important claim links to its primary source | — | `sources.test.ts` (no claim without a source, no source nothing cites); `provenance.spec.ts` (every citation resolves, with a WCAG 2.5.3-compliant name) | Source URLs are not checked at run time; a NIST reorganisation would break them silently |
 
 ## 5. Implementation identity

@@ -70,10 +70,11 @@ export function renderPQCTrio(container: HTMLElement): void {
       <p class="text-sm text-muted mt-1">
         Deployment moves faster than any citation this page could pin, so the descriptions above are
         deliberately general: they are not sourced to a primary document and should not be read as
-        current product claims. What <em>is</em> sourced is NIST's own transition expectation —
-        classical algorithms at 112-bit strength deprecated after 2030 and disallowed after 2035
-        ${cite('transition')} — and that document is still an <strong>initial public draft</strong>,
-        so those dates are proposed rather than final.
+        current product claims. NIST's <strong>final transition report (27 October 2026)</strong>
+        deprecates quantum-vulnerable public-key algorithms after 2030 and disallows their use
+        under NIST standards and guidelines after 2035 ${cite('transition')}. Earlier targets
+        remain for prioritized federal systems: key establishment by 31 December 2030 and
+        signatures by 31 December 2031. These are not universal private-sector deadlines.
       </p>
       <p class="text-sm text-muted mt-1"><em>On publication NIST described FIPS 204 as "intended as the primary standard for protecting digital signatures" and FIPS 205 as "intended as a backup method in case ML-DSA proves vulnerable."</em> ${cite('primaryStandard')}</p>
     </div>
