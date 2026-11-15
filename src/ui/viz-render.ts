@@ -265,10 +265,11 @@ export function renderModuleLWE(host: HTMLElement): void {
       <p class="text-sm text-muted">
         <strong>The numbers below are invented for legibility.</strong> This is a 3×3 integer system
         modulo <span class="mono">97</span> with a hand-picked secret and a fixed error pattern.
-        Real ML-DSA-65 works over a module of
+        Real ML-DSA-65 uses a public matrix <strong>A</strong> of
         <span class="mono">6×5</span> polynomials, each with 256 coefficients, modulo
-        <span class="mono">8,380,417</span> — about
-        <span class="mono">7,680</span> secret coefficients rather than three. Solving the toy
+        <span class="mono">8,380,417</span>, and a secret <strong>(s₁, s₂)</strong> of
+        <span class="mono">5 + 6</span> such polynomials —
+        <span class="mono">2,816</span> secret coefficients rather than three. Solving the toy
         system by hand is easy; that is the point of shrinking it, and it is also why nothing here
         is evidence about the real problem's hardness.
       </p>

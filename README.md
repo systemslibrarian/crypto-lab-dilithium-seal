@@ -46,7 +46,7 @@ expected repetition counts (4.25, 5.1, 3.85) "are not quite accurate" and will
 become **4.36, 5.14, 3.91**. The demo shows the published figures, the pending
 ones, and the fact that the correction is not yet official.
 
-### Two claims that were wrong
+### Two claims that were corrected
 
 - **"ML-DSA-65 … approximately 165-bit post-quantum security."** That number
   appears nowhere in FIPS 204. It is the *Quantum Core-SVP* estimate from
@@ -56,8 +56,13 @@ ones, and the fact that the correction is not yet official.
   states the security *category*, quotes FIPS 204's refusal, and attributes the
   Core-SVP figure to the submission where it belongs.
 - **"the Dilithium specification's expected repetition counts are 4.25, 5.1 and
-  3.85."** Those are FIPS 204 Table 1's numbers, not the submission's, and NIST
-  has since recorded them as inaccurate.
+  3.85."** The numbers are right as far as they go, and they appear in both
+  documents — Table 2 of the [round-3 CRYSTALS-Dilithium specification (version
+  3.1, 8 February 2021)](https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf),
+  "Repetitions (from Eq. (5))", and FIPS 204 Table 1 — but the sentence omitted
+  that NIST has since recorded them as inaccurate (see above). *Corrected
+  15 November 2026: an earlier revision of this file called them "FIPS 204
+  Table 1's numbers, not the submission's"; both tables list 4.25, 5.1 and 3.85.*
 
 ### Research update — 16 October 2026
 
@@ -264,10 +269,14 @@ first; a browser test asserts that DOM ordering.
 - **The Module-LWE panel carried no caveat at all.** It opened *"ML-DSA's public
   key is t = A·s + e"* and then showed a 3×3 integer system modulo 97 with a
   hand-picked secret and a fixed error pattern. It now states that its numbers
-  are invented for legibility and gives the real scale — a 6×5 module of
-  256-coefficient polynomials modulo 8,380,417, roughly **7,680 secret
+  are invented for legibility and gives the real scale — a 6×5 public matrix
+  **A** of 256-coefficient polynomials modulo 8,380,417 (7,680 coefficients)
+  acting on a secret (s₁, s₂) of ℓ + k = 5 + 6 polynomials, **2,816 secret
   coefficients rather than three** — and says plainly that nothing in it is
-  evidence about the real problem's hardness.
+  evidence about the real problem's hardness. *Corrected 15 November 2026: an
+  earlier revision counted the 6 × 5 × 256 = 7,680 coefficients of the public
+  matrix as the secret; FIPS 204 Table 1 gives (k, ℓ) = (6, 5) for ML-DSA-65 and
+  §6.1 samples s₁ ∈ R_q^ℓ and s₂ ∈ R_q^k.*
 - **The Fiat-Shamir panel's caveat was one grey line below its controls.** It now
   carries a model label above it and a **toy-vs-real parameter table** beside it,
   so the gap is a number rather than the word "illustrative".

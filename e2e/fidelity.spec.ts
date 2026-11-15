@@ -135,7 +135,7 @@ test.describe('the Module-LWE model is unmistakably a model', () => {
     await openStep(page, 4);
     const text = await page.locator('.mlwe-viz').innerText();
     expect(text).toContain('6×5');
-    expect(text).toContain('7,680');
+    expect(text).toContain('2,816');
     expect(text).toMatch(/rather than three/i);
   });
 
