@@ -84,7 +84,7 @@ export function renderPQCTrio(container: HTMLElement): void {
       ${fidelityBadge('concept', 'timeline')}
       <div class="timeline">
         <div class="tl-item"><span class="tl-year">2016</span> — NIST announces Post-Quantum Cryptography standardization process</div>
-        <div class="tl-item"><span class="tl-year">2017</span> — First round: 69 submissions received, including CRYSTALS-Dilithium</div>
+        <div class="tl-item"><span class="tl-year">2017</span> — First round: 82 submissions received, 69 of them accepted as complete and proper first-round candidates, including CRYSTALS-Dilithium</div>
         <div class="tl-item"><span class="tl-year">2019</span> — Second round: 26 candidates advance</div>
         <div class="tl-item"><span class="tl-year">2020</span> — Third round: 7 finalists and 8 alternates selected</div>
         <div class="tl-item"><span class="tl-year">2022</span> — CRYSTALS-Dilithium, CRYSTALS-Kyber, and SPHINCS+ selected for standardization</div>

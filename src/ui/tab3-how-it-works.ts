@@ -45,7 +45,7 @@ const STEPS: StepInfo[] = [
       <div class="math-block">
         <div class="label-tag">Secret vectors</div>
         Sample <strong>s₁</strong> and <strong>s₂</strong> with small coefficients
-        (from a centered binomial distribution, bounded by η)
+        (each coefficient drawn uniformly from −η to η by rejection sampling) ${cite('secretSampling')}
       </div>
       <div class="math-block">
         <div class="label-tag">Public key computation</div>

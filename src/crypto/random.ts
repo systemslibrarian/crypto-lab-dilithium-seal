@@ -18,7 +18,7 @@
  * `InsecureRandomnessError` and the operation does not happen. The UI catches
  * it and says so; it does not degrade, retry or substitute.
  *
- * `Math.random` DOES appear once in this codebase — in
+ * `Math.random` DOES appear in this codebase — twice, both in
  * `src/ui/fiat-shamir-viz.ts`, a deliberately reduced teaching model that
  * computes toy polynomials over a 257-element ring and is labelled as such
  * wherever it renders. `src/__tests__/runtime.test.ts` asserts it appears

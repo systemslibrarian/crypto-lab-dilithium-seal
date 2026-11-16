@@ -18,9 +18,9 @@
  * That ML-DSA signing has an observable, input-dependent execution time, which
  * is what "not constant-time" means. FIPS 204's signing algorithm repeats until
  * its candidate response passes a norm check, and Table 1 gives the expected
- * number of repetitions as 4.25–5.14 depending on the parameter set; a run that
- * needs eight attempts genuinely does about twice the work of one that needs
- * four.
+ * number of repetitions as 4.25, 5.1 or 3.85 depending on the parameter set; a
+ * run that needs eight attempts genuinely does about twice the work of one that
+ * needs four.
  *
  * ── What it does NOT demonstrate ──────────────────────────────────────────
  * It is not a key-recovery attack and does not show one is possible here. It
@@ -232,8 +232,9 @@ export function renderTimingVariability(host: HTMLElement): void {
         Same key, same message, same thread, same seconds — and signing varies
         ${signSpread > verifySpread ? 'substantially more' : 'no more'} than the operation with no
         data-dependent loop. FIPS 204 signing repeats until its candidate response passes a norm
-        check; Table 1 puts the expected number of repetitions at 4.25–5.14, so a signature that
-        needs eight attempts really does about twice the work of one that needs four.
+        check; Table 1 puts the expected number of repetitions at 4.25, 5.1 and 3.85 for ML-DSA-44,
+        -65 and -87, so a signature that needs eight attempts really does about twice the work of
+        one that needs four.
         <strong>That is what "not constant-time" means:</strong> the execution time depends on
         values derived from the secret key.
       </p>

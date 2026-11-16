@@ -265,6 +265,21 @@ describe('no non-cryptographic randomness in the crypto path', () => {
     expect(code('src/ui/fiat-shamir-viz.ts')).toMatch(/\bMath\.random\b/);
   });
 
+  it('calls it twice there, and the prose says so rather than "exactly once"', () => {
+    // README.md and THREAT-MODEL.md both said "Math.random appears exactly
+    // once". It appears twice -- once for the toy coefficients, once for the
+    // challenge signs -- both in the one allowed file. The claim is about a
+    // count, so the count is asserted and the documents are read back.
+    const calls = code('src/ui/fiat-shamir-viz.ts').match(/\bMath\.random\b/g) ?? [];
+    expect(calls).toHaveLength(2);
+    for (const doc of ['README.md', 'THREAT-MODEL.md']) {
+      const text = read(doc);
+      expect(text, doc).toMatch(/`?Math\.random`? appears in exactly one file/);
+      expect(text, doc).toContain('calls it twice');
+      expect(text, doc).not.toMatch(/`?Math\.random`? appears exactly once/);
+    }
+  });
+
   it('has no Math.random call anywhere under src/crypto', () => {
     for (const file of sources('src/crypto')) {
       expect(code(file), file).not.toMatch(/\bMath\.random\b/);

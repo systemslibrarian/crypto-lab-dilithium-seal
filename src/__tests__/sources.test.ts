@@ -109,6 +109,25 @@ describe('claims', () => {
     expect(claim('notOneNumber').statement).toMatch(/not described by a single number/);
   });
 
+  it('sample the secret vectors uniformly by rejection, not from a binomial', () => {
+    // ML-DSA draws s1 and s2 uniformly from [-eta, eta] by rejection sampling
+    // (FIPS 204 Algorithm 33 -> Algorithm 31 -> Algorithm 15). The centered
+    // binomial distribution belongs to ML-KEM (FIPS 203 Algorithm 8), and the
+    // page said so about ML-DSA until 15 November 2026.
+    const c = claim('secretSampling');
+    expect(c.sourceId).toBe('fips204');
+    expect(c.locator).toBe('Algorithms 15, 31 and 33');
+    expect(c.statement).toContain('uniformly');
+    expect(c.statement).toContain('rejection sampling');
+    expect(c.statement).not.toMatch(/binomial/i);
+  });
+
+  it('cite the computational-assumptions section for the hardness claim', () => {
+    // FIPS 204 section 3.2 is "Computational Assumptions"; 3.4 is hedged and
+    // deterministic signing and 4 is the parameter sets.
+    expect(claim('hardness').locator).toBe('§3.2');
+  });
+
   it('record the repetitions figure as published AND the pending correction', () => {
     const c = claim('repetitions');
     expect(c.sourceId).toBe('fips204');
@@ -134,6 +153,11 @@ describe('freshness', () => {
     expect(FIPS_204_EDITION.errataUpdateIncorporated).toBeNull();
     expect(FIPS_204_EDITION.errataSpreadsheetUpdated).toMatch(ISO_DATE);
     expect(FIPS_204_EDITION.errataNote).toMatch(/ARE NOT official changes/);
+    // The spreadsheet's header ends "...in a future errata update of the
+    // publication."; quoting it three words short was a misquotation.
+    expect(FIPS_204_EDITION.errataNote).toContain(
+      'in a future errata update of the publication."'
+    );
   });
 
   it('reviewed the errata spreadsheet no earlier than the standard was published', () => {

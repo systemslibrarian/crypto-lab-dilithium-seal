@@ -74,10 +74,11 @@ through signature randomness.
   would otherwise hand key generation a 32-byte seed of zeros it would accept —
   the operation **stops** with a visible error. It does not degrade, retry or
   substitute.
-- `Math.random` appears exactly once in the repository, in the reduced
-  Fiat-Shamir teaching model. A test scans every source file (with comments and
-  string literals stripped, so the rule does not fire on its own documentation),
-  allows that one file by name, and asserts the allowance is not dead.
+- `Math.random` appears in exactly one file in the repository — the reduced
+  Fiat-Shamir teaching model, which calls it twice. A test scans every source
+  file (with comments and string literals stripped, so the rule does not fire on
+  its own documentation), allows that one file by name, and asserts the
+  allowance is not dead.
 - Signing uses the **hedged** variant, which FIPS 204 §3.6.1 describes as a
   countermeasure against side-channel and fault attacks on deterministic
   signing. If randomness is unavailable, signing stops rather than silently

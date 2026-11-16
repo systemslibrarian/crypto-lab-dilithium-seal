@@ -41,10 +41,12 @@ opening this file.
 
 NIST maintains a *potential updates (errata)* spreadsheet for FIPS 204 whose own
 header says the entries "ARE NOT official changes, but may be corrected in a
-future errata update." One entry matters here: it records that Table 1's
-expected repetition counts (4.25, 5.1, 3.85) "are not quite accurate" and will
-become **4.36, 5.14, 3.91**. The demo shows the published figures, the pending
-ones, and the fact that the correction is not yet official.
+future errata update of the publication." One entry matters here: it records
+that Table 1's expected repetition counts (4.25, 5.1, 3.85) "are not quite
+accurate" and will become **4.36, 5.14, 3.91**. The demo shows the published
+figures, the pending ones, and the fact that the correction is not yet official.
+*Corrected 15 November 2026: an earlier revision of this file ended the quoted
+header three words early, at "future errata update."*
 
 ### Two claims that were corrected
 
@@ -339,11 +341,13 @@ it has no fallback path. If `crypto.getRandomValues` is missing, throws, or is
 stubbed to return zeros, key generation and hedged signing **stop** and the page
 says why. Verification keeps working, because it needs no randomness.
 
-`Math.random` appears exactly once in this repository — in
-`src/ui/fiat-shamir-viz.ts`, the reduced teaching model. A test scans every
-source file (with comments and string literals stripped, so the rule does not
-fire on its own documentation), allows that one file, and asserts the allowance
-is not dead.
+`Math.random` appears in exactly one file in this repository —
+`src/ui/fiat-shamir-viz.ts`, the reduced teaching model, which calls it twice. A
+test scans every source file (with comments and string literals stripped, so the
+rule does not fire on its own documentation), allows that one file, and asserts
+the allowance is not dead and that both calls are still in it. *Corrected
+15 November 2026: an earlier revision of this file said "exactly once"; the
+allowed file has always contained two calls.*
 
 ### Limitations, on the page rather than in a comment
 

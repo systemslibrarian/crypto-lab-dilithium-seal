@@ -75,6 +75,32 @@ test.describe('every panel declares what it is', () => {
   });
 });
 
+test.describe('the standard\'s own facts, as the standard states them', () => {
+  test('samples the secret vectors uniformly by rejection, not from a binomial', async ({
+    page,
+  }) => {
+    // FIPS 204 Algorithm 33 calls Algorithm 31, which calls Algorithm 15:
+    // uniform on [-eta, eta] by rejection. The centered binomial is ML-KEM's.
+    await page.goto('.');
+    await openStep(page, 1);
+    const text = await page.locator('#step-body-1').innerText();
+    expect(text).toMatch(/uniformly from −η to η by rejection sampling/);
+    expect(text).not.toMatch(/binomial/i);
+  });
+
+  test('counts the first-round submissions received and the ones accepted', async ({ page }) => {
+    // NIST IR 8240: 82 packages received by the November 2017 deadline, 69
+    // accepted as first-round candidates.
+    await page.goto('.');
+    await page.locator('#tab-btn-pqc-trio').click();
+    const content = page.locator('#tab-content');
+    // The tab is a dynamic import, so wait on the text rather than reading it.
+    await expect(content).toContainText('82 submissions received');
+    await expect(content).toContainText('69 of them accepted');
+    await expect(content).not.toContainText('69 submissions received');
+  });
+});
+
 test.describe('the Fiat-Shamir model is unmistakably a model', () => {
   test('says outright that it is not the signer', async ({ page }) => {
     await page.goto('.');
@@ -358,6 +384,10 @@ test.describe('"not constant-time" is measured, not just asserted', () => {
       signSpread > verifySpread ? /varies\s+substantially more/ : /varies\s+no more/,
     );
     expect(conclusion).toMatch(/that is what "not constant-time" means/i);
+    // FIPS 204 Table 1's own figures, not a range spliced together from the
+    // table and the errata spreadsheet's pending replacements.
+    expect(conclusion).toContain('4.25, 5.1 and 3.85');
+    expect(conclusion).not.toContain('5.14');
   });
 
   test('never claims a key-recovery attack', async ({ page }) => {

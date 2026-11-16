@@ -51,8 +51,9 @@ export const STANDARDS_REVIEWED = '2026-09-20';
  * 13 August 2024 is still the current text. What NIST maintains is a "potential
  * updates (errata)" spreadsheet of issues found since publication, which it
  * says "ARE NOT official changes, but may be corrected in a future errata
- * update." One of those entries changes a number this demo displays, so the
- * distinction is load-bearing rather than pedantic — see `CLAIMS.repetitions`.
+ * update of the publication." One of those entries changes a number this demo
+ * displays, so the distinction is load-bearing rather than pedantic — see
+ * `CLAIMS.repetitions`.
  */
 export const FIPS_204_EDITION = {
   publication: 'FIPS 204 (initial public version)',
@@ -215,6 +216,13 @@ export const CLAIMS: Record<string, Claim> = {
     sourceId: 'fips204',
     locator: '§4',
   },
+  secretSampling: {
+    id: 'secretSampling',
+    statement:
+      'The coefficients of s₁ and s₂ are drawn uniformly from the interval [−η, η] by rejection sampling.',
+    sourceId: 'fips204',
+    locator: 'Algorithms 15, 31 and 33',
+  },
   repetitions: {
     id: 'repetitions',
     statement:
@@ -275,7 +283,7 @@ export const CLAIMS: Record<string, Claim> = {
     id: 'hardness',
     statement: 'ML-DSA security rests on the Module-LWE and Module-SIS lattice problems.',
     sourceId: 'fips204',
-    locator: '§3.4 and §4',
+    locator: '§3.2',
   },
   primaryStandard: {
     id: 'primaryStandard',
