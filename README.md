@@ -32,6 +32,14 @@ standards-status strip sits between the hero and the tab bar on **every** tab,
 so the edition, the errata state and the review date are readable without
 opening this file.
 
+Each registered source carries its publication date at the precision the
+document itself states: `YYYY-MM-DD` where the document gives a day, `YYYY-MM`
+where it does not. NIST IR 8240 is dated "January 2019" and nothing finer, so
+that is what the registry holds — with an explicit `datePrecision: 'day' |
+'month'` marker beside it rather than a guess made from the string's length. No
+day is invented to satisfy a format, and `sources.test.ts` fails if a date and
+its marker disagree in either direction.
+
 | | |
 |---|---|
 | Edition implemented | FIPS 204, initial public version, 13 August 2024 |

@@ -67,6 +67,8 @@ is not a validation.
 | 4.5 | The "165-bit" figure is a **round-3 Core-SVP estimate**, not a FIPS 204 property | Round-3 spec Table 1 | `provenance.spec.ts` forbids the affirmative ML-DSA framing and requires the round-3 attribution wherever the number appears | — |
 | 4.6 | Source publication status is distinguished from policy scope | NIST IR 8547 final, 27 October 2026, §4 | `sources.test.ts`, `provenance.spec.ts` | Final report; NIST-wide algorithm transition dates do not replace earlier prioritized federal targets or establish universal private-sector deadlines |
 | 4.7 | Every important claim links to its primary source | — | `sources.test.ts` (no claim without a source, no source nothing cites); `provenance.spec.ts` (every citation resolves, with a WCAG 2.5.3-compliant name) | Source URLs are not checked at run time; a NIST reorganisation would break them silently |
+| 4.8 | 82 first-round submission packages received, 69 accepted as complete and proper candidates | NIST IR 8240 §2.1 (January 2019) | `sources.test.ts` (the counts are sourced to IR 8240, not transposed); `fidelity.spec.ts` asserts both numbers render and that “69 submissions received” does not | — |
+| 4.9 | A source's date is recorded at the precision its document states, day or month, with the precision declared | NIST IR 8240 is dated “January 2019” with no day; FIPS 204 is dated 13 August 2024 | `sources.test.ts` — the declared `datePrecision` and the date's shape must agree in both directions, and `formatDate` throws on a mismatch rather than rendering a day the source never stated | A precision marker is a human assertion about the document; nothing machine-checks it against the PDF |
 
 ## 5. Implementation identity
 

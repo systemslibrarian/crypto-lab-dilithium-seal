@@ -83,7 +83,7 @@ function sourceRows(): string {
         <th scope="row"><a href="${escapeHTML(s.url)}" target="_blank" rel="noopener">${escapeHTML(s.short)}</a></th>
         <td>${escapeHTML(s.title)}</td>
         <td>${escapeHTML(s.publisher)}</td>
-        <td>${escapeHTML(formatDate(s.published))}</td>
+        <td>${escapeHTML(formatDate(s.published, s.datePrecision))}</td>
         <td>${s.status ? `<span class="text-yellow">${escapeHTML(s.status)}</span>` : 'Final'}</td>
       </tr>`
   ).join('');

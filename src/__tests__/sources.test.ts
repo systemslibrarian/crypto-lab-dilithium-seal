@@ -26,6 +26,7 @@ import {
   SOURCES,
   STANDARDS_REVIEWED,
   claim,
+  datePrecisionOf,
   formatDate,
   source,
 } from '../data/sources';
@@ -33,6 +34,9 @@ import { ML_DSA_PARAMS, generateKeyPair, sign } from '../crypto/mldsa';
 import { cite, renderStandardsStatus } from '../ui/provenance';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** The two forms `Source.published` may take, and nothing else. */
+const DAY_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const MONTH_DATE = /^\d{4}-\d{2}$/;
 
 describe('sources', () => {
   it('each carry a resolvable https URL, a publisher and an edition date', () => {
@@ -40,9 +44,75 @@ describe('sources', () => {
     for (const s of SOURCES) {
       expect(s.url, s.id).toMatch(/^https:\/\//);
       expect(s.publisher.length, s.id).toBeGreaterThan(0);
-      expect(s.published, s.id).toMatch(ISO_DATE);
-      expect(Number.isNaN(Date.parse(s.published)), s.id).toBe(false);
+      // Day precision OR month precision, ISO either way, and parseable once
+      // the month form is anchored to its first day for the parse alone.
+      const parseable = s.datePrecision === 'day' ? s.published : `${s.published}-01`;
+      expect(s.published, s.id).toMatch(s.datePrecision === 'day' ? DAY_DATE : MONTH_DATE);
+      expect(Number.isNaN(Date.parse(parseable)), s.id).toBe(false);
     }
+  });
+
+  it('declare the precision of every date, and the declaration must match the date', () => {
+    // THE POINT OF THIS TEST. The registry accepts two date forms because NIST
+    // publishes both: FIPS 204 is dated 13 August 2024, and NIST IR 8240 is
+    // dated "January 2019" with no day in the document at all. Allowing the
+    // month form is what made IR 8240 registrable without inventing 2019-01-01.
+    //
+    // The risk the marker removes is a date entered sloppily in EITHER
+    // direction: a month-precision date slipped in without saying so, or a
+    // day-precision date truncated to its month. Inferring the precision from
+    // the string cannot catch either, because the string would be its own
+    // witness. So both halves are asserted, for every source:
+    //   - the marker is present and is one of the two legal values;
+    //   - the shape of the string agrees with the marker, and vice versa.
+    for (const s of SOURCES) {
+      expect(['day', 'month'], `${s.id}: datePrecision must be declared`).toContain(
+        s.datePrecision
+      );
+      expect(datePrecisionOf(s.published), `${s.id}: ${s.published} is not an ISO date`).not.toBeNull();
+      expect(
+        datePrecisionOf(s.published),
+        `${s.id}: declares ${s.datePrecision} precision but ${s.published} is not that shape`
+      ).toBe(s.datePrecision);
+      if (s.datePrecision === 'month') {
+        expect(s.published, `${s.id} must not carry an invented day`).not.toMatch(DAY_DATE);
+      }
+    }
+    // Both kinds are actually present, so neither branch above is vacuous.
+    expect(SOURCES.some((s) => s.datePrecision === 'day')).toBe(true);
+    expect(SOURCES.some((s) => s.datePrecision === 'month')).toBe(true);
+  });
+
+  it('refuse to render a date whose declared precision disagrees with it', () => {
+    // A mismatch is a bug in the registry, not something to paper over at the
+    // point of rendering: `formatDate` throws rather than quietly printing a day
+    // the source never stated, or dropping one it did.
+    expect(formatDate('2024-08-13', 'day')).toBe('13 August 2024');
+    expect(formatDate('2019-01', 'month')).toBe('January 2019');
+    expect(() => formatDate('2019-01', 'day')).toThrow(/month precision but declares day/);
+    expect(() => formatDate('2024-08-13', 'month')).toThrow(/day precision but declares month/);
+    expect(() => formatDate('2019', 'month')).toThrow(/not an ISO date/);
+    expect(() => formatDate('January 2019')).toThrow(/not an ISO date/);
+    // A month-precision date is rendered as a month, never padded to the 1st.
+    expect(formatDate('2019-01', 'month')).not.toContain('1 January');
+  });
+
+  it('register NIST IR 8240 at the precision the report itself carries', () => {
+    // Verified against the report: "January 2019" on the cover page of
+    // NIST.IR.8240.pdf and "Date Published: January 2019" on its CSRC record.
+    // No day appears in either, so none is recorded here.
+    const s = source('nistir8240');
+    expect(s.title).toContain(
+      'Status Report on the First Round of the NIST Post-Quantum Cryptography Standardization Process'
+    );
+    expect(s.publisher).toBe('NIST');
+    expect(s.url).toBe('https://nvlpubs.nist.gov/nistpubs/ir/2019/NIST.IR.8240.pdf');
+    expect(s.published).toBe('2019-01');
+    expect(s.datePrecision).toBe('month');
+    expect(s.identifier).toContain('10.6028/NIST.IR.8240');
+    // A final report: nothing to flag as draft or superseded.
+    expect(s.status).toBeUndefined();
+    expect(formatDate(s.published, s.datePrecision)).toBe('January 2019');
   });
 
   it('have unique ids', () => {
@@ -97,6 +167,24 @@ describe('claims', () => {
     // FIPS 203/205 and the library are referenced in prose rather than by a
     // registered claim; everything else must be cited.
     expect(orphans.sort()).toEqual(['fips203', 'fips205', 'noble-pq']);
+  });
+
+  it('source the first-round counts to NIST IR 8240 instead of to nothing', () => {
+    // 82 received and 69 accepted were on the timeline with no citation, because
+    // the only document that states them could not be registered under a
+    // day-precision-only schema. NIST IR 8240 §2.1: "NIST received 82 candidate
+    // algorithm submission packages by the November 30, 2017 entry deadline...
+    // Of these, NIST accepted 69 first-round candidates as meeting both the
+    // submission requirements and the minimum acceptability criteria for being
+    // 'complete and proper submissions'."
+    const c = claim('firstRoundCounts');
+    expect(c.sourceId).toBe('nistir8240');
+    expect(c.statement).toContain('82');
+    expect(c.statement).toContain('69');
+    expect(c.statement).toMatch(/complete and proper/);
+    expect(c.locator).toContain('2.1');
+    // The counts must not be transposed, which is the error this claim guards.
+    expect(c.statement).not.toMatch(/69 candidate algorithm submission packages/);
   });
 
   it('attribute the Core-SVP figure to the competition submission, never to FIPS 204', () => {
@@ -277,7 +365,7 @@ describe('rendering', () => {
     }
     for (const s of SOURCES) {
       expect(html, s.id).toContain(s.url);
-      expect(html, s.id).toContain(formatDate(s.published));
+      expect(html, s.id).toContain(formatDate(s.published, s.datePrecision));
     }
   });
 

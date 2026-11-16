@@ -18,7 +18,37 @@
  * makes that kind of claim impossible to write down casually.
  */
 
-export type SourceKind = 'standard' | 'errata' | 'vectors' | 'submission' | 'guidance' | 'library' | 'research';
+export type SourceKind =
+  | 'standard'
+  | 'errata'
+  | 'vectors'
+  | 'submission'
+  | 'guidance'
+  | 'report'
+  | 'library'
+  | 'research';
+
+/**
+ * How precise a source's publication date is, stated explicitly.
+ *
+ * NIST dates some documents to the day (FIPS 204: 13 August 2024) and others
+ * only to the month. NIST IR 8240 is one of the latter: "January 2019" on its
+ * cover page and "Date Published: January 2019" on its CSRC record, with no day
+ * anywhere in the document. A registry that accepts only `YYYY-MM-DD` forces a
+ * choice between fabricating a day and leaving the document unregistered, and
+ * this demo took the second option -- the first-round submission counts sat on
+ * the page with no citation because their source could not be entered.
+ *
+ * WHY THIS IS A DECLARED FIELD AND NOT A STRING-LENGTH CHECK. Inferring the
+ * precision from the string would make the data its own witness: `'2019-01'`
+ * would be month-precision by definition, so a truncation that dropped the day
+ * from a day-precise document would be indistinguishable from a date that is
+ * genuinely only known to the month. Declared separately, the two have to
+ * agree, and `src/__tests__/sources.test.ts` checks that agreement in both
+ * directions -- a month-precision date without the marker fails, and so does a
+ * day-precision one.
+ */
+export type DatePrecision = 'day' | 'month';
 
 export interface Source {
   id: string;
@@ -28,8 +58,15 @@ export interface Source {
   publisher: string;
   url: string;
   kind: SourceKind;
-  /** Edition or publication date of the exact document version cited (ISO). */
+  /**
+   * Edition or publication date of the exact document version cited, ISO 8601
+   * and no more precise than the document itself: `YYYY-MM-DD` where the
+   * document carries a day, `YYYY-MM` where it carries only a month. A day is
+   * never invented to satisfy the format.
+   */
   published: string;
+  /** Which of the two forms `published` is in. Always stated, never inferred. */
+  datePrecision: DatePrecision;
   /** Set when the document is not a final publication. */
   status?: string;
   /** Anything a reader needs to identify the exact artifact. */
@@ -77,6 +114,7 @@ export const SOURCES: Source[] = [
     url: 'https://eprint.iacr.org/2026/607',
     kind: 'research',
     published: '2026-10-16',
+    datePrecision: 'day',
     status: 'Revision of TCHES 2026 research; model-dependent estimates, not a standards change',
     identifier: 'ePrint 2026/607, revision 16 October 2026; doi:10.46586/tches.v2026.i4.397-422',
   },
@@ -88,6 +126,7 @@ export const SOURCES: Source[] = [
     url: 'https://csrc.nist.gov/pubs/fips/204/final',
     kind: 'standard',
     published: '2024-08-13',
+    datePrecision: 'day',
     identifier: 'doi:10.6028/NIST.FIPS.204',
   },
   {
@@ -98,6 +137,7 @@ export const SOURCES: Source[] = [
     url: 'https://csrc.nist.gov/files/pubs/fips/204/final/docs/fips-204-potential-updates.xlsx',
     kind: 'errata',
     published: '2026-07-31',
+    datePrecision: 'day',
     status: 'Potential corrections — not official changes to the standard',
     identifier: 'fips-204-potential-updates.xlsx',
   },
@@ -109,6 +149,7 @@ export const SOURCES: Source[] = [
     url: 'https://csrc.nist.gov/pubs/fips/203/final',
     kind: 'standard',
     published: '2024-08-13',
+    datePrecision: 'day',
   },
   {
     id: 'fips205',
@@ -118,6 +159,7 @@ export const SOURCES: Source[] = [
     url: 'https://csrc.nist.gov/pubs/fips/205/final',
     kind: 'standard',
     published: '2024-08-13',
+    datePrecision: 'day',
   },
   {
     id: 'nist-pqc-release',
@@ -127,6 +169,7 @@ export const SOURCES: Source[] = [
     url: 'https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards',
     kind: 'guidance',
     published: '2024-08-13',
+    datePrecision: 'day',
   },
   {
     id: 'acvp',
@@ -136,6 +179,7 @@ export const SOURCES: Source[] = [
     url: 'https://github.com/usnistgov/ACVP-Server/tree/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files',
     kind: 'vectors',
     published: '2026-08-12',
+    datePrecision: 'day',
     identifier: 'release v1.1.0.43, commit 975de31eb83d87039ec88934fdc47d8c312b892d',
   },
   {
@@ -146,6 +190,7 @@ export const SOURCES: Source[] = [
     url: 'https://pq-crystals.org/dilithium/data/dilithium-specification-round3-20210208.pdf',
     kind: 'submission',
     published: '2021-02-08',
+    datePrecision: 'day',
     status: 'Competition submission — superseded by FIPS 204, not the standard',
   },
   {
@@ -156,7 +201,24 @@ export const SOURCES: Source[] = [
     url: 'https://csrc.nist.gov/pubs/ir/8547/final',
     kind: 'guidance',
     published: '2026-10-27',
+    datePrecision: 'day',
     identifier: 'doi:10.6028/NIST.IR.8547',
+  },
+  {
+    id: 'nistir8240',
+    short: 'NIST IR 8240',
+    title:
+      'NIST IR 8240: Status Report on the First Round of the NIST Post-Quantum ' +
+      'Cryptography Standardization Process',
+    publisher: 'NIST',
+    url: 'https://nvlpubs.nist.gov/nistpubs/ir/2019/NIST.IR.8240.pdf',
+    kind: 'report',
+    // The document is dated "January 2019" and nothing finer -- on its cover
+    // page, in its CSRC record and in the DOI landing data. There is no day to
+    // record, so none is recorded.
+    published: '2019-01',
+    datePrecision: 'month',
+    identifier: 'NISTIR 8240, doi:10.6028/NIST.IR.8240',
   },
   {
     id: 'noble-pq',
@@ -166,6 +228,7 @@ export const SOURCES: Source[] = [
     url: 'https://github.com/paulmillr/noble-post-quantum',
     kind: 'library',
     published: '2026-09-20',
+    datePrecision: 'day',
     identifier: 'version read from package-lock.json at build time',
   },
 ];
@@ -333,6 +396,13 @@ export const CLAIMS: Record<string, Claim> = {
       note: 'Final report published 27 October 2026. Earlier targets remain for prioritized federal systems: key establishment by 31 December 2030 and signatures by 31 December 2031. This is not a universal private-sector deadline.',
     },
   },
+  firstRoundCounts: {
+    id: 'firstRoundCounts',
+    statement:
+      'NIST received 82 candidate algorithm submission packages by the 30 November 2017 deadline and accepted 69 of them as complete and proper first-round candidates.',
+    sourceId: 'nistir8240',
+    locator: '§2.1 Acceptance of the First Round Candidates',
+  },
   interop: {
     id: 'interop',
     statement:
@@ -402,12 +472,40 @@ export function claim(id: string): Claim {
   return found;
 }
 
-/** Human-readable date for rendering, e.g. "13 August 2024". */
-export function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+const DAY_FORM = /^\d{4}-\d{2}-\d{2}$/;
+const MONTH_FORM = /^\d{4}-\d{2}$/;
+
+/**
+ * The precision the string is actually in, read from its shape alone.
+ *
+ * This is the half of the check that the `datePrecision` marker is compared
+ * AGAINST; it is deliberately not used as a substitute for it.
+ */
+export function datePrecisionOf(iso: string): DatePrecision | null {
+  if (DAY_FORM.test(iso)) return 'day';
+  if (MONTH_FORM.test(iso)) return 'month';
+  return null;
+}
+
+/**
+ * Human-readable date for rendering: "13 August 2024" for a day-precision date,
+ * "January 2019" for a month-precision one.
+ *
+ * A month-precision date is never padded to a day on the way to the screen. Pass
+ * the record's `datePrecision` as the second argument and a disagreement between
+ * the declared precision and the string throws here rather than rendering a date
+ * the source does not state.
+ */
+export function formatDate(iso: string, declared?: DatePrecision): string {
+  const shape = datePrecisionOf(iso);
+  if (shape === null) throw new Error(`not an ISO date: ${iso}`);
+  if (declared !== undefined && declared !== shape) {
+    throw new Error(`date ${iso} is ${shape} precision but declares ${declared}`);
+  }
+  const options: Intl.DateTimeFormatOptions = { timeZone: 'UTC', month: 'long', year: 'numeric' };
+  if (shape === 'day') options.day = 'numeric';
+  const utcDay = shape === 'day' ? iso : `${iso}-01`;
+  const parsed = new Date(`${utcDay}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) throw new Error(`not a real date: ${iso}`);
+  return parsed.toLocaleDateString('en-GB', options);
 }
