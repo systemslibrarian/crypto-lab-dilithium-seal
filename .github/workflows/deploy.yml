@@ -165,9 +165,9 @@ jobs:
       # inside the audit gate, for four lines of shell.
       - name: Serve the production build
         run: |
-          npm run preview -- --port 4173 --strictPort &
+          npm run preview -- --port 4625 --strictPort &
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:4173/crypto-lab-dilithium-seal/ >/dev/null; then
+            if curl -fsS http://localhost:4625/crypto-lab-dilithium-seal/ >/dev/null; then
               echo "preview is up"; exit 0
             fi
             sleep 1
@@ -181,7 +181,7 @@ jobs:
       # WORST run, because its threshold is 1.00 and it is scored from
       # deterministic audits rather than timings.
       - name: Lighthouse budgets
-        run: npm run lighthouse -- http://localhost:4173/crypto-lab-dilithium-seal/
+        run: npm run lighthouse -- http://localhost:4625/crypto-lab-dilithium-seal/
 
       - name: Publish the Lighthouse reports
         if: always()
