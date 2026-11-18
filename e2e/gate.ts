@@ -4,6 +4,7 @@ import { auditContrast, formatContrastFailures } from './contrast';
 import { auditControlNames, formatControlNameFailures } from './control-names';
 import { auditNonText, formatNonTextFailures, type NonTextFailure } from './nontext';
 import { NONTEXT_BASELINE } from './nontext-baseline';
+import { assertThisLab } from './identity';
 
 export const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -146,7 +147,9 @@ export async function boot(page: Page, os: 'dark' | 'light'): Promise<void> {
   // through the media query the way a visitor drives it. A light-preference OS
   // must still get dark: that run is the proof the pin ignores the preference.
   await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: os });
-  await page.goto('.');
+  /* Not page.goto: a suite that navigates and starts asserting cannot
+   * tell this lab's server from anyone else's. See e2e/identity.ts. */
+  await assertThisLab(page, '.');
   expect(
     await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches),
     'reduced-motion emulation must actually be in effect'
