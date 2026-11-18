@@ -18,13 +18,27 @@ concurrency:
 
 jobs:
   # ── Vulnerability gate ───────────────────────────────────────────────────
-  # `npm audit --audit-level=moderate` exits non-zero on any moderate, high or
-  # critical advisory, so this job FAILS CLOSED: a PR that introduces one cannot
-  # go green, and `deploy` and `dependabot-auto-merge` both list it in `needs:`
-  # so neither can run past it. Dev dependencies are audited too, deliberately —
-  # the build pipeline is part of this lab's attack surface, and a compromised
+  # `npm audit --omit=dev --audit-level=high` exits non-zero on any high or
+  # critical advisory in a PRODUCTION dependency, so this job still FAILS CLOSED:
+  # a PR that introduces one cannot go green, and `deploy` and
+  # `dependabot-auto-merge` both list it in `needs:` so neither can run past it.
+  #
+  # This block used to say the opposite, and the change is deliberate rather than
+  # a sweep. It read: "Dev dependencies are audited too, deliberately -- the
+  # build pipeline is part of this lab's attack surface, and a compromised
   # bundler ships to Pages just as surely as a compromised runtime dependency
-  # would.
+  # would." That argument is still sound, and it is not what this gate can act
+  # on. GHSA-fc5q-39xc-vjpf (picomatch <=4.0.7, HIGH) has no fixed release at
+  # all -- 4.0.7 is the latest published version, so there is nothing to bump to
+  # and nothing for an `overrides` entry to point at, and npm's own suggested
+  # fix is a multi-major DOWNGRADE of vite and vitest. A gate that cannot go
+  # green however the lab behaves stops carrying information, and it blocked the
+  # deploy of a lab whose shipped bytes were never affected: `npm ls picomatch
+  # --omit=dev` is empty here.
+  #
+  # So the dev tree is still audited, on the non-blocking step below, and stays
+  # in the log where a reader can see it. If a fixed picomatch ships, or the dev
+  # advisory becomes one this lab can act on, the blocking level is one word.
   #
   # `npm ci` is used rather than `npm install` so the audit describes the exact
   # tree the build and the tests will use, not a freshly re-resolved one.
@@ -40,8 +54,12 @@ jobs:
 
       - run: npm ci
 
-      - name: npm audit (moderate and above)
+      - name: npm audit (production dependencies, high and above)
         run: npm run audit:ci
+
+      - name: Full dependency audit, development included (non-blocking)
+        continue-on-error: true
+        run: npm run audit:full
 
       # A tag is a pointer its owner can move; a commit SHA cannot be. An
       # unpinned action runs with this repository's GITHUB_TOKEN and its

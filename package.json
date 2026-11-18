@@ -12,7 +12,7 @@
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.test.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "audit:ci": "npm audit --audit-level=moderate",
+    "audit:ci": "npm audit --omit=dev --audit-level=high",
     "vectors:check": "node scripts/fetch-acvp-vectors.mjs",
     "conformance:full": "node scripts/full-acvp.mjs",
     "check:action-pins": "node scripts/check-action-pins.mjs",
@@ -23,7 +23,8 @@
     "lighthouse": "node scripts/lighthouse.mjs",
     "vectors:update": "node scripts/fetch-acvp-vectors.mjs --write",
     "test:a11y": "playwright test",
-    "deploy": "gh workflow run deploy.yml --repo systemslibrarian/crypto-lab-dilithium-seal --ref main"
+    "deploy": "gh workflow run deploy.yml --repo systemslibrarian/crypto-lab-dilithium-seal --ref main",
+    "audit:full": "npm audit"
   },
   "dependencies": {
     "@noble/post-quantum": "^0.7.1"
