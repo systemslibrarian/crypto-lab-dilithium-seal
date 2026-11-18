@@ -36,11 +36,24 @@ const lock = JSON.parse(read('package-lock.json')) as {
 };
 
 describe('vulnerability gate', () => {
-  it('runs npm audit at moderate-or-higher, which is what makes it fail closed', () => {
-    // `--audit-level=moderate` is the whole gate: without it `npm audit` exits 0
-    // and reports advisories as prose that nothing reads.
-    expect(pkg.scripts['audit:ci']).toBe('npm audit --audit-level=moderate');
+  it('runs npm audit on the shipped tree at high-or-higher, which is what makes it fail closed', () => {
+    // `--audit-level=high` is the whole gate: without a level `npm audit` exits 0
+    // and reports advisories as prose that nothing reads. `--omit=dev` is what
+    // the level is asked ABOUT -- the dependencies that reach Pages -- and the
+    // reasoning for narrowing it is in deploy.yml's own header beside the job.
+    expect(pkg.scripts['audit:ci']).toBe('npm audit --omit=dev --audit-level=high');
     expect(workflow).toContain('npm run audit:ci');
+  });
+
+  it('still runs the full audit, so a dev advisory is visible rather than absent', () => {
+    // The narrowed gate is only honest if the advisories it stops blocking on
+    // are still printed. A dev-only high that nothing reports is the same
+    // silence this repository treats as a defect everywhere else, so the full
+    // audit runs beside the gate under `continue-on-error`.
+    expect(pkg.scripts['audit:full']).toBe('npm audit');
+    expect(workflow).toContain('npm run audit:full');
+    const full = workflow.slice(workflow.indexOf('npm run audit:full') - 200, workflow.indexOf('npm run audit:full'));
+    expect(full).toContain('continue-on-error: true');
   });
 
   it('audits the tree npm ci produces, not a re-resolved one', () => {

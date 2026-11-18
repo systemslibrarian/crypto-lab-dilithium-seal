@@ -5,7 +5,7 @@
  * ── Why this is hand-rolled rather than `@cyclonedx/cyclonedx-npm` ────────
  * Adding a tool to describe the dependency tree would add ~40 packages to the
  * dependency tree it describes, and every one of them would then be inside the
- * `npm audit --audit-level=moderate` gate that can block this repository's
+ * `npm audit --omit=dev --audit-level=high` gate that can block this repository's
  * merges. Paying that to emit a JSON document of a published, stable shape is a
  * poor trade for a project whose whole supply-chain posture is "one runtime
  * dependency, pinned".
