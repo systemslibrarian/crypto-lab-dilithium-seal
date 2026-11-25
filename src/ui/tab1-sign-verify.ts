@@ -22,7 +22,6 @@ import { getSelectedVariant, setSelectedVariant } from './selected-variant';
 
 let keyPair: MLDSAKeyPair | null = null;
 let lastSignature: Uint8Array | null = null;
-let lastMessage: Uint8Array | null = null;
 let lastSealedDoc: SealedDocument | null = null;
 
 /**
@@ -39,7 +38,6 @@ let lastSealedDoc: SealedDocument | null = null;
 export function renderSignVerify(container: HTMLElement): void {
   keyPair = null;
   lastSignature = null;
-  lastMessage = null;
   lastSealedDoc = null;
 
   container.innerHTML = `
@@ -187,7 +185,7 @@ function resetKeyMaterial(): void {
 /**
  * Drop the current signature and every control and pane that depends on it.
  *
- * `handleKeyGen` nulls `lastSignature`/`lastMessage` but used to leave the DOM
+ * `handleKeyGen` clears the signature but used to leave the DOM
  * alone, so a fresh keypair inherited the previous run's "✓ VERIFIED — the
  * ML-DSA-65 signature is valid" badge and the previous signature hex. Verify
  * then early-returned on the null signature, so the stale pass sat there
@@ -197,7 +195,6 @@ function resetKeyMaterial(): void {
  */
 function clearSignatureState(): void {
   lastSignature = null;
-  lastMessage = null;
 
   for (const id of ['btn-verify', 'btn-tamper-msg', 'btn-tamper-sig']) {
     const btn = document.getElementById(id) as HTMLButtonElement | null;
@@ -244,6 +241,12 @@ function updateParamInfo(): void {
 }
 
 function bindEvents(): void {
+  document.getElementById('message-input')!.addEventListener('input', () => {
+    document.getElementById('verify-output')!.replaceChildren();
+  });
+  document.getElementById('seal-json-input')!.addEventListener('input', () => {
+    document.getElementById('seal-verify-output')!.replaceChildren();
+  });
   document.getElementById('btn-keygen')!.addEventListener('click', handleKeyGen);
   document.getElementById('btn-sign')!.addEventListener('click', handleSign);
   document.getElementById('btn-verify')!.addEventListener('click', handleVerify);
@@ -314,18 +317,31 @@ async function handleKeyGen(): Promise<void> {
   (document.getElementById('btn-seal') as HTMLButtonElement).disabled = false;
 }
 
+function messageBytes(): Uint8Array {
+  const field = document.getElementById('message-input') as HTMLTextAreaElement;
+  return new TextEncoder().encode(field.value);
+}
+
+// Each check owns its pending notice. Editing or starting another check removes
+// that notice, so an earlier completion cannot repaint an obsolete result.
+function pendingVerification(output: HTMLElement): Text {
+  const notice = document.createTextNode('Verifying…');
+  output.replaceChildren(notice);
+  return notice;
+}
+
 async function handleSign(): Promise<void> {
   if (!keyPair) return;
 
-  const msgText = (document.getElementById('message-input') as HTMLTextAreaElement).value;
-  lastMessage = new TextEncoder().encode(msgText);
+  clearSignatureState();
+  const message = messageBytes();
 
   const output = document.getElementById('sign-output')!;
   output.innerHTML = `<span class="spinner"></span> Signing with ${getSelectedVariant().toUpperCase()}…`;
 
   let result;
   try {
-    result = await sign(keyPair.privateKey, lastMessage, getSelectedVariant());
+    result = await sign(keyPair.privateKey, message, getSelectedVariant());
   } catch (err) {
     // Hedged signing draws a fresh 32-byte rnd per signature, so it depends on
     // the RBG just as keygen does. Stop and say so.
@@ -355,11 +371,13 @@ async function handleSign(): Promise<void> {
 }
 
 async function handleVerify(): Promise<void> {
-  if (!keyPair || !lastSignature || !lastMessage) return;
+  if (!keyPair || !lastSignature) return;
   const output = document.getElementById('verify-output')!;
 
+  const notice = pendingVerification(output);
   const start = performance.now();
-  const valid = await verify(keyPair.publicKey, lastMessage, lastSignature, getSelectedVariant());
+  const valid = await verify(keyPair.publicKey, messageBytes(), lastSignature, getSelectedVariant());
+  if (notice.parentNode !== output) return;
   const elapsed = (performance.now() - start).toFixed(2);
 
   if (valid) {
@@ -376,17 +394,17 @@ async function handleVerify(): Promise<void> {
 }
 
 function handleTamperMessage(): void {
-  if (!lastMessage) return;
+  if (!lastSignature) return;
   const textarea = document.getElementById('message-input') as HTMLTextAreaElement;
   textarea.value += '!';
-  lastMessage = new TextEncoder().encode(textarea.value);
   document.getElementById('verify-output')!.innerHTML =
-    '<p class="text-sm text-red mt-1">⚠ Message tampered — click Verify to see the signature fail.</p>';
+    '<p class="text-sm text-red mt-1">⚠ Message tampered — appended “!”. Click Verify to check the edited text.</p>';
 }
 
 function handleTamperSignature(): void {
   if (!lastSignature) return;
   lastSignature[10] ^= 0xff;
+  document.querySelector<HTMLElement>('#sign-output .output')!.textContent = truncateHex(lastSignature, 48);
   (document.getElementById('btn-tamper-sig') as HTMLButtonElement).disabled = true;
   document.getElementById('verify-output')!.innerHTML =
     '<p class="text-sm text-red mt-1">⚠ Signature tampered (1 byte flipped once) — click Verify to see it fail. Sign again to create a fresh signature.</p>';
@@ -598,8 +616,9 @@ async function handleVerifySealJSON(): Promise<void> {
     return;
   }
 
-  output.innerHTML = '<span class="spinner"></span> Verifying…';
+  const notice = pendingVerification(output);
   const result = await verifyDocument(doc);
+  if (notice.parentNode !== output) return;
 
   const badge = result.valid
     ? '<span class="badge badge-pass">✓ VERIFIED — CONTENT ONLY</span>'

@@ -286,6 +286,40 @@ test('a fresh keypair retires the previous run\'s signature and its verdict', as
   expect(errors).toEqual([]);
 });
 
+for (const variant of VARIANTS) {
+  test(`${variant}: Verify reads the text in the editor and keeps the signature across edits`, async ({ page }) => {
+    await page.goto('.');
+    await selectVariant(page, variant);
+    const input = page.locator('#message-input');
+    const output = page.locator('#verify-output');
+    const original = ' Café 📚 ';
+    await input.fill(original);
+    await keygenAndSign(page);
+    await page.locator('#btn-verify').click();
+    await expect(output.locator('.badge-pass')).toBeVisible();
+
+    for (const edited of [original.normalize('NFD'), original.trim(), '']) {
+      await input.fill(edited);
+      await expect(output).toBeEmpty();
+      await page.locator('#btn-verify').click();
+      await expect(output.locator('.badge-fail')).toBeVisible();
+      await input.fill(original);
+      await expect(output).toBeEmpty();
+      await page.locator('#btn-verify').click();
+      await expect(output.locator('.badge-pass')).toBeVisible();
+    }
+
+    await input.fill('');
+    await page.locator('#btn-sign').click();
+    await input.fill(' ');
+    await page.locator('#btn-verify').click();
+    await expect(output.locator('.badge-fail')).toBeVisible();
+    await input.fill('');
+    await page.locator('#btn-verify').click();
+    await expect(output.locator('.badge-pass')).toBeVisible();
+  });
+}
+
 test('tampering with the message flips Verify to FAILED and names the cause', async ({ page }) => {
   test.setTimeout(120_000);
   const errors = watchForPageErrors(page);
@@ -323,7 +357,11 @@ test('tampering with one signature byte flips Verify to FAILED, and re-signing r
   await page.goto('.');
   await keygenAndSign(page);
 
+  const preview = page.locator('#sign-output .output');
+  const originalHex = await preview.innerText();
   await page.locator('#btn-tamper-sig').click();
+  const changedByte = (parseInt(originalHex.slice(20, 22), 16) ^ 0xff).toString(16).padStart(2, '0');
+  await expect(preview).toHaveText(originalHex.slice(0, 20) + changedByte + originalHex.slice(22));
   await expect(page.locator('#btn-tamper-sig')).toBeDisabled();
   await expect(page.locator('#verify-output')).toContainText('1 byte flipped once');
 
@@ -505,6 +543,32 @@ test('the seal verifier reaches every failure state it can report', async ({ pag
   await verifyJSON(JSON.stringify(good));
   await expect(output.locator('.badge-pass')).toHaveText(/VERIFIED/, { timeout: 30_000 });
   await expect(output).toContainText('Content intact: yes | Signature valid: yes');
+
+  // Editing retires both a completed verdict and one still computing its hash.
+  await input.fill('');
+  await expect(output).toBeEmpty();
+  await input.fill(JSON.stringify(good));
+  await page.evaluate(async () => {
+    const digest = crypto.subtle.digest.bind(crypto.subtle);
+    let finish!: () => void;
+    const completed = new Promise<void>(resolve => { finish = resolve; });
+    crypto.subtle.digest = async (...args) => {
+      const hash = await digest(...args);
+      // The editing event runs before the verifier receives the hash.
+      const box = document.querySelector<HTMLTextAreaElement>('#seal-json-input')!;
+      box.value = '';
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+      setTimeout(finish, 0);
+      return hash;
+    };
+    try {
+      document.getElementById('btn-verify-seal')!.click();
+      await completed;
+    } finally {
+      crypto.subtle.digest = digest;
+    }
+  });
+  await expect(output).toBeEmpty();
 
   // 4. Edited content, stale hash: both checks fail and the text says both.
   await verifyJSON(JSON.stringify({ ...good, content: `${good.content} EDITED` }));
